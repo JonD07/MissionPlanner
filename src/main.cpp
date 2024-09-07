@@ -18,6 +18,7 @@
 #define PRINT_RESULTS	0
 #define DATA_LOG_FORMAT	"alg_%d.dat"
 #define DATA_LOG_DEFLT_PATH	""
+#define DATA_NODE_DATA_PATH	"../node_data.dat"
 
 
 int main(int argc, char *argv[]) {
@@ -63,7 +64,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	Solver* solver = NULL;
-	Input input(argv[1], numUAVs);
+	Input input(argv[1], DATA_NODE_DATA_PATH, numUAVs);
 	Solution solution(&input);
 
 	switch(algorithm) {

@@ -24,6 +24,7 @@
 #define DEBUG_SLVR_OPT		DEBUG || 1
 
 #define BIG_M		500000
+#define CONST_RELAXATION(X)		X,X+0.1
 
 
 class Solver_Opt : public Solver {

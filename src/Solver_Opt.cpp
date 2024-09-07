@@ -18,6 +18,7 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		env.start();
 		GRBModel model = GRBModel(env);
 		model.set(GRB_IntParam_NonConvex, 2);
+		model.set(GRB_DoubleParam_TimeLimit, 20.0);
 
 		//
 		/// Create variables
@@ -28,13 +29,19 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		for(int i = 0; i < input->getN(); i++) {
 			GRBVar x = model.addVar(-GRB_INFINITY, GRB_INFINITY, 0.0, GRB_CONTINUOUS, "x_" + itos(i));
 			GRBVar y = model.addVar(-GRB_INFINITY, GRB_INFINITY, 0.0, GRB_CONTINUOUS, "y_" + itos(i));
+			x.set(GRB_DoubleAttr_Start, input->getX_b());
+			y.set(GRB_DoubleAttr_Start, input->getY_b());
 
 			X_i.push_back(x);
 			Y_i.push_back(y);
 		}
 
+		// Create position variables for base station
+		GRBVar X_b = model.addVar(CONST_RELAXATION(input->getX_b()), 0.0, GRB_CONTINUOUS, "x_b");
+		GRBVar Y_b = model.addVar(CONST_RELAXATION(input->getY_b()), 0.0, GRB_CONTINUOUS, "y_b");
+
 		// Create i->j sub-tour visit flags
-		std::vector<std::vector<std::vector<std::vector<GRBVar>>>> Z_lijk;
+		std::vector<std::vector<std::vector<std::vector<GRBVar>>>> E_lijk;
 		// For each drone...
 		for(int l = 0; l < input->getM(); l++) {
 			// Create node i dimension
@@ -66,11 +73,53 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 				node_i.push_back(node_j);
 			}
 			// Push node i dimension
-			Z_lijk.push_back(node_i);
+			E_lijk.push_back(node_i);
+		}
+
+		// Create BS->i sub-tour visit flags
+		std::vector<std::vector<std::vector<GRBVar>>> Eb_lik;
+		// For each drone...
+		for(int l = 0; l < input->getM(); l++) {
+			// Create node i dimension
+			std::vector<std::vector<GRBVar>> node_i;
+			for(int i = 0; i < input->getN(); i++) {
+				// Create sub-tour dimension
+				std::vector<GRBVar> sub_tour;
+				for(int k = 0; k < input->getN(); k++) {
+					// Does drone l travel from BS to waypoint i on sub-tour k?
+					GRBVar z = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "zb_" + itos(l) + itos(i) + itos(k));
+					sub_tour.push_back(z);
+				}
+				// Push sub-tour dimension
+				node_i.push_back(sub_tour);
+			}
+			// Push node i dimension
+			Eb_lik.push_back(node_i);
+		}
+
+		// Create i->BS sub-tour visit flags
+		std::vector<std::vector<std::vector<GRBVar>>> E_lik_b;
+		// For each drone...
+		for(int l = 0; l < input->getM(); l++) {
+			// Create node i dimension
+			std::vector<std::vector<GRBVar>> node_i;
+			for(int i = 0; i < input->getN(); i++) {
+				// Create sub-tour dimension
+				std::vector<GRBVar> sub_tour;
+				for(int k = 0; k < input->getN(); k++) {
+					// Does drone l travel from BS to waypoint i on sub-tour k?
+					GRBVar z = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "z_" + itos(l) + itos(i) + itos(k) + "_b");
+					sub_tour.push_back(z);
+				}
+				// Push sub-tour dimension
+				node_i.push_back(sub_tour);
+			}
+			// Push node i dimension
+			E_lik_b.push_back(node_i);
 		}
 
 		// Create sub-tour activation flags
-		std::vector<std::vector<GRBVar>> U_lk;
+		std::vector<std::vector<GRBVar>> W_lk;
 		// For each drone
 		for(int l = 0; l < input->getM(); l++) {
 			// For each sub-tour
@@ -81,7 +130,7 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 				sub_tour.push_back(u);
 			}
 			// Push sub-tour
-			U_lk.push_back(sub_tour);
+			W_lk.push_back(sub_tour);
 		}
 
 		// Create energy budget variables
@@ -114,6 +163,14 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 			T_lk.push_back(sub_tour);
 		}
 
+		// Create distance bs ->i variables
+		std::vector<GRBVar> D_bi;
+		for(int i = 0; i < input->getN(); i++) {
+			// Distance from waypoint i to j
+			GRBVar d = model.addVar(0.0, GRB_INFINITY, 0.0, GRB_CONTINUOUS,  "db_" + itos(i));
+			D_bi.push_back(d);
+		}
+
 		// Create distance i -> j variables
 		std::vector<std::vector<GRBVar>> D_ij;
 		for(int i = 0; i < input->getN(); i++) {
@@ -129,18 +186,18 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		}
 
 		// Create waypoint/node sequence variable
-		std::vector<GRBVar> W_i;
+		std::vector<GRBVar> U_i;
 		for(int i = 0; i < input->getN(); i++) {
 			// Sequence number for waypoint i
 			GRBVar w = model.addVar(0.0, GRB_INFINITY, 0.0, GRB_INTEGER,  "w_" + itos(i));
-			W_i.push_back(w);
+			U_i.push_back(w);
 		}
 
 		// Create service time variable
 		std::vector<GRBVar> Ts_i;
 		for(int i = 0; i < input->getN(); i++) {
 			// Sequence number for waypoint i
-			GRBVar t = model.addVar(0.0, GRB_INFINITY, 0.0, GRB_INTEGER,  "ts_" + itos(i));
+			GRBVar t = model.addVar(0.0, GRB_INFINITY, 0.0, GRB_CONTINUOUS,  "ts_" + itos(i));
 			Ts_i.push_back(t);
 		}
 
@@ -156,20 +213,25 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 				// Add in time to travel from i->j (if traveling from i->j)
 				for(int i = 0; i < input->getN(); i++) {
 					for(int j = 0; j < input->getN(); j++) {
-						lhs = lhs - D_ij.at(i).at(j)*Z_lijk.at(l).at(i).at(j).at(k)*(1.0/input->getV_l(l));
+						lhs = lhs - D_ij.at(i).at(j)*E_lijk.at(l).at(i).at(j).at(k)*(1.0/input->getV_l(l));
 					}
+				}
+
+				// Add in time to travel from bs->i (if traveling from bs->j)
+				for(int i = 0; i < input->getN(); i++) {
+					lhs = lhs - D_bi.at(i)*Eb_lik.at(l).at(i).at(k)*(1.0/input->getV_l(l));
 				}
 
 				// Add in time to service node i
 				for(int i = 0; i < input->getN(); i++) {
 					for(int j = 0; j < input->getN(); j++) {
-						lhs = lhs - Ts_i.at(i)*Z_lijk.at(l).at(j).at(i).at(k);
+						lhs = lhs - Ts_i.at(i)*E_lijk.at(l).at(j).at(i).at(k);
 					}
 				}
 
 				// The first sub-tour is free... the rest need a battery swap
 				if(k > 0) {
-					lhs = lhs - input->getTb_l(l)*U_lk.at(l).at(k);
+					lhs = lhs - input->getTb_l(l)*W_lk.at(l).at(k);
 				}
 
 				model.addQConstr(lhs >= 0, "T_"+itos(l)+itos(k)+"_geq_tour_time");
@@ -179,59 +241,24 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		// Track distance from waypoint-to-waypoint
 		for(int i = 0; i < input->getN(); i++) {
 			for(int j = 0; j < input->getN(); j++) {
-				model.addQConstr(D_ij.at(i).at(j)*D_ij.at(i).at(j) >= (X_i.at(i)-X_i.at(j))*(X_i.at(i)-X_i.at(j)) + (Y_i.at(i)-Y_i.at(j)), "D_"+itos(i)+itos(j)+"_geq_dist");
+				model.addQConstr(D_ij.at(i).at(j)*D_ij.at(i).at(j) >= (X_i.at(i)-X_i.at(j))*(X_i.at(i)-X_i.at(j)) + (Y_i.at(i)-Y_i.at(j))*(Y_i.at(i)-Y_i.at(j)), "D_"+itos(i)+itos(j)+"_geq_dist");
 			}
-		}
-
-		// Visit all waypoints
-		for(int j = 0; j < input->getN(); j++) {
-			GRBLinExpr expr = 0;
-			for(int l = 0; l < input->getM(); l++) {
-				for(int i = 0; i < input->getN(); i++) {
-					for(int k = 0; k < input->getN(); k++) {
-						expr = expr + Z_lijk.at(l).at(i).at(j).at(k);
-					}
-				}
-			}
-
-			model.addConstr(expr == 1, "Z_li"+itos(j)+"_eq_1");
 		}
 
 		// Control sub-tour usage
 		for(int l = 0; l < input->getM(); l++) {
 			for(int k = 0; k < input->getN(); k++) {
 				// If not U then..
-				GRBLinExpr expr = BIG_M*U_lk.at(l).at(k);
+				GRBLinExpr expr = BIG_M*W_lk.at(l).at(k);
 
 				for(int i = 0; i < input->getN(); i++) {
 					for(int j = 0; j < input->getN(); j++) {
-						expr -= Z_lijk.at(l).at(i).at(j).at(k);
+						expr -= E_lijk.at(l).at(i).at(j).at(k);
 					}
 				}
 
 				// All Z should be turned off
 				model.addConstr(expr >= 0, "MU_"+itos(l)+itos(k)+"_eq_Z");
-			}
-		}
-
-		// Current law
-		for(int l = 0; l < input->getM(); l++) {
-			for(int k = 0; k < input->getN(); k++) {
-				for(int i = 0; i < input->getN(); i++) {
-					GRBLinExpr expr = 0;
-					// Sum going in...
-					for(int j = 0; j < input->getN(); j++) {
-						expr += Z_lijk.at(l).at(j).at(i).at(k);
-					}
-					// Minus sum going out...
-					for(int j = 0; j < input->getN(); j++) {
-						expr -= Z_lijk.at(l).at(i).at(j).at(k);
-					}
-
-
-					// Equals zero
-					model.addConstr(expr == 0, "Z_"+itos(l)+itos(i)+"j"+itos(k)+"_eq_Z_"+itos(l)+"j"+itos(i)+itos(k));
-				}
 			}
 		}
 
@@ -241,17 +268,111 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 				for(int j = 0; j < input->getN(); j++) {
 					for(int k = 0; k < input->getN(); k++) {
 						// LHS bound
-						model.addConstr(BIG_M*(1-Z_lijk.at(l).at(i).at(j).at(k)) + W_i.at(i) + 1 >= W_i.at(j), "if_Z_"+itos(l)+itos(i)+itos(j)+itos(k)+"_then_W");
+						GRBLinExpr lh_expr = BIG_M*(1-E_lijk.at(l).at(i).at(j).at(k)) + U_i.at(i) + 1 - U_i.at(j);
+						model.addConstr(lh_expr >= 0, "if_Z_"+itos(l)+itos(i)+itos(j)+itos(k)+"_then_W");
 						// RHS bound
-						model.addConstr( W_i.at(j) >= W_i.at(i) + 1 - BIG_M*(1 - Z_lijk.at(l).at(i).at(j).at(k)), "then_W_if_Z_"+itos(l)+itos(i)+itos(j)+itos(k));
+						GRBLinExpr rh_expr = U_i.at(j) - U_i.at(i) - 1 + BIG_M*(1 - E_lijk.at(l).at(i).at(j).at(k));
+						model.addConstr(rh_expr >= 0, "then_W_if_Z_"+itos(l)+itos(i)+itos(j)+itos(k));
 					}
 				}
 			}
 		}
 
-		// Control the numbering scheme to start with the base station
-		// Control time required to collect data
-		// Restrain distance from node...?
+		// Track distance from BS-to-waypoint
+		for(int i = 0; i < input->getN(); i++) {
+			model.addQConstr(D_bi.at(i)*D_bi.at(i) >= (X_i.at(i)-X_b)*(X_i.at(i)-X_b) + (Y_i.at(i)-Y_b)*(Y_i.at(i)-Y_b), "D_b"+itos(i)+"_geq_dist");
+		}
+
+		// If we use sub-tour k, then we have to leave the BS
+		for(int l = 0; l < input->getM(); l++) {
+			for(int k = 0; k < input->getN(); k++) {
+				GRBLinExpr expr = 0;
+				for(int i = 0; i < input->getN(); i++) {
+					// Sum of ways to leave...
+					expr += Eb_lik.at(l).at(i).at(k);
+				}
+				// Equals sub-tour flag
+				model.addConstr(expr == W_lk.at(l).at(k), "Zb_"+itos(l)+"i"+itos(k)+"_eq_W_"+itos(l)+itos(k));
+			}
+		}
+
+		// If we use sub-tour k, then we have to return to the BS
+		for(int l = 0; l < input->getM(); l++) {
+			for(int k = 0; k < input->getN(); k++) {
+				GRBLinExpr expr = 0;
+				for(int i = 0; i < input->getN(); i++) {
+					// Sum of ways to return...
+					expr += E_lik_b.at(l).at(i).at(k);
+				}
+				// Equals sub-tour flag
+				model.addConstr(expr == W_lk.at(l).at(k), "Z_"+itos(l)+"i"+itos(k)+"_b_eq_W_"+itos(l)+itos(k));
+			}
+		}
+
+		// Must "enter" every waypoint
+		for(int i = 0; i < input->getN(); i++) {
+			GRBLinExpr expr = 0;
+
+			for(int l = 0; l < input->getM(); l++) {
+				for(int j = 0; j < input->getN(); j++) {
+					for(int k = 0; k < input->getN(); k++) {
+						expr += E_lijk.at(l).at(j).at(i).at(k);
+					}
+				}
+			}
+
+			for(int l = 0; l < input->getM(); l++) {
+				for(int k = 0; k < input->getN(); k++) {
+					expr += Eb_lik.at(l).at(i).at(k);
+				}
+			}
+
+			model.addConstr(expr == 1, "Sum_into_"+itos(i)+"_eq_1");
+		}
+
+		// Must "exit" every waypoint
+		for(int i = 0; i < input->getN(); i++) {
+			GRBLinExpr expr = 0;
+
+			for(int l = 0; l < input->getM(); l++) {
+				for(int j = 0; j < input->getN(); j++) {
+					for(int k = 0; k < input->getN(); k++) {
+						expr += E_lijk.at(l).at(i).at(j).at(k);
+					}
+				}
+			}
+
+			for(int l = 0; l < input->getM(); l++) {
+				for(int k = 0; k < input->getN(); k++) {
+					expr += E_lik_b.at(l).at(i).at(k);
+				}
+			}
+
+			model.addConstr(expr == 1, "Sum_into_"+itos(i)+"_eq_1");
+		}
+
+		// Sum into waypoint == sum leaving
+		for(int l = 0; l < input->getM(); l++) {
+			for(int k = 0; k < input->getN(); k++) {
+				for(int i = 0; i < input->getN(); i++) {
+					GRBLinExpr expr = 0;
+					// Count going in
+					for(int j = 0; j < input->getN(); j++) {
+						expr += E_lijk.at(l).at(j).at(i).at(k);
+					}
+					expr += Eb_lik.at(l).at(i).at(k);
+
+					// Minus count going out
+					for(int j = 0; j < input->getN(); j++) {
+						expr -= E_lijk.at(l).at(i).at(j).at(k);
+					}
+					expr -= E_lik_b.at(l).at(i).at(k);
+
+					// Equals zero
+					model.addConstr(expr == 0, "Sum_in_eq_sum_out_"+itos(i));
+				}
+			}
+		}
 
 
 
@@ -313,16 +434,35 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 			// Each hovering location
 			printf("Hovering Order and Locations:\n");
 			for(int i = 0; i < input->getN(); i++) {
-				printf(" %d : %.1f (%f, %f)\n", i, W_i.at(i).get(GRB_DoubleAttr_X), X_i.at(i).get(GRB_DoubleAttr_X), Y_i.at(i).get(GRB_DoubleAttr_X));
+				printf(" %d : %f (%f, %f)\n", i, U_i.at(i).get(GRB_DoubleAttr_X), X_i.at(i).get(GRB_DoubleAttr_X), Y_i.at(i).get(GRB_DoubleAttr_X));
 			}
 
 			// Tour variables...
 			printf("Tour:\n");
 			for(int l = 0; l < input->getM(); l++) {
+				for(int k = 0; k < input->getN(); k++) {
+					if(W_lk.at(l).at(k).get(GRB_DoubleAttr_X) > 0.5) {
+						printf(" %d runs sub-tour %d\n", l, k);
+					}
+				}
+			}
+			for(int l = 0; l < input->getM(); l++) {
+				for(int i = 0; i < input->getN(); i++) {
+					for(int k = 0; k < input->getN(); k++) {
+						if(Eb_lik.at(l).at(i).at(k).get(GRB_DoubleAttr_X) > 0.5) {
+							printf(" %d goes BS->%d on %d\n", l, i, k);
+						}
+						if(E_lik_b.at(l).at(i).at(k).get(GRB_DoubleAttr_X) > 0.5) {
+							printf(" %d goes %d->BS on %d\n", l, i, k);
+						}
+					}
+				}
+			}
+			for(int l = 0; l < input->getM(); l++) {
 				for(int i = 0; i < input->getN(); i++) {
 					for(int j = 0; j < input->getN(); j++) {
 						for(int k = 0; k < input->getN(); k++) {
-							if(Z_lijk.at(l).at(i).at(j).at(k).get(GRB_DoubleAttr_X) > 0.5) {
+							if(E_lijk.at(l).at(i).at(j).at(k).get(GRB_DoubleAttr_X) > 0.5) {
 								printf(" %d goes %d->%d on %d\n", l, i, j, k);
 							}
 						}

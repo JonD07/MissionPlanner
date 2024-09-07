@@ -42,8 +42,10 @@ set(sources src/main.cpp)
 
 add_executable(${CMAKE_PROJECT_NAME}
 	${sources}
+	src/FileReader.cpp
 	src/Input.cpp
 	src/Node.cpp
+	src/NodeGenerator.cpp
 	src/Solution.cpp
 	src/Solver_Opt.cpp
 	src/Solver.cpp

@@ -1,31 +1,30 @@
 #include "Input.h"
 
-Input::Input(std::string input_path, int m) {
+Input::Input(std::string input_path, std::string data_path, int m) : input_fileName(input_path), fileReader(input_path), nodeGenerator(data_path) {
 	// Initial assignment, silence annoying macro warnings
 	// and avoid issues if parsing fails
-	input_fileName = input_path;
 	N = 0;
 	M = m;
 
 	/*
 	  Expected file structure:
 		N
-		x_1 y_1 r_1
+		x_1 y_1 z_1 zs_1 q_1 t_1
 		....
-		x_n y_n r_n
-		x_b y_b
+		x_n y_n z_n zs_n q_n t_n
+		x_b y_b z_b
 
 	  Example:
 		# 5 sensors
 		5
 		# Sensor data...
-		109.9 75.1 21.2
-		150.8 172.6 35.4
-		58.8 176.8 33.5
-		130.7 141.6 44.2
-		84.7 161.9 44.6
+		109.9 75.1  21.1 1.5 25.0 1
+		150.8 172.6 35.3 0.8 40.0 1
+		58.8  176.8 3.5  1.0 10.0 0
+		130.7 141.6 34.2 0.5 40.0 0
+		84.7  161.9 4.5  2.0 10.0 0
 		# Base station
-		31.1 125.4
+		31.1  125.4 2.0
 
 	 * NOTE: We ignore lines that start with '#'
 	 */
@@ -40,7 +39,7 @@ Input::Input(std::string input_path, int m) {
 	std::ifstream file(input_path);
 	std::string line;
 	// Grab first line, should have N, M, and  R
-	if(getNextLine(&file, &line)) {
+	if(fileReader.GetNextLine(&line)) {
 		std::stringstream lineStreamNEM(line);
 		// Push value into N
 		lineStreamNEM >> N;
@@ -51,21 +50,18 @@ Input::Input(std::string input_path, int m) {
 	}
 	// Sanity print
 	if(SANITY_PRINT)
-		printf(" N = %d, M = %d\n Reading in node data", N, M);
+		printf(" N = %d, M = %d\n Reading in node data\n", N, M);
 
 	for(int i = 0; i < N && read_success; i++) {
 		// Grab next capability line
-		if(getNextLine(&file, &line)) {
-			std::stringstream lineStream_i(line);
-			double x, y, r;
-
-			lineStream_i >> x;
-			lineStream_i >> y;
-			lineStream_i >> r;
-
+		if(fileReader.GetNextLine(&line)) {
+			// Create a new node
+			Node node = nodeGenerator.GenerateNode(i,line);
+			vNodeLst.push_back(node);
 			if(DEBUG_INPUT)
-				printf("  (%f, %f), R: %f\n", x, y, r);
-			vNodeLst.push_back(Node(i,x,y,r));
+				printf("  %d: (%f, %f, %f) safe-alt: %f, data: %f\n", vNodeLst.back().getID(),
+						vNodeLst.back().getX(), vNodeLst.back().getY(), vNodeLst.back().getZ(),
+						vNodeLst.back().getZs(), vNodeLst.back().getQ());
 		}
 		else {
 			// Line reading failed
@@ -74,17 +70,18 @@ Input::Input(std::string input_path, int m) {
 	}
 
 	// Read in the location of the base station
-	if(getNextLine(&file, &line)) {
+	if(fileReader.GetNextLine(&line)) {
 		std::stringstream lineStream_base(line);
-		double x, y;
+		double x, y, z;
 
 		lineStream_base >> x;
 		lineStream_base >> y;
+		lineStream_base >> z;
 
-		mBaseStation = Node(-1, x, y, 0);
+		mBaseStation = BaseStation(x, y, z);
 
 		if(DEBUG_INPUT)
-			printf(" Base station: (%f, %f)\n", x, y);
+			printf(" Base station: (%f, %f, %f)\n", mBaseStation.fX, mBaseStation.fY, mBaseStation.fZ);
 	}
 	else {
 		// Line reading failed
@@ -120,41 +117,81 @@ double Input::getTb_l(int l) {
 	return 60.0;
 }
 
-
-// Gets the next valid line from file, stores it in line. Will ignore
-// lines that start with '#' symbol.
-bool Input::getNextLine(std::ifstream* file, std::string* line) {
-	bool run_again = true;
-	bool read_success = false;
-	// Grab next line un-commented line
-	while(run_again) {
-		if(std::getline(*file, *line)) {
-			if(DEBUG_INPUT) {
-				printf("Next line: \"%s\"\n", (*line).c_str());
-				printf("First char: \'%d\'\n", (*line)[0]);
-			}
-			// Successfully read next line, verify it doesn't start with '#'
-			if((*line)[0] != '#') {
-				// Found next valid input line
-				run_again = false;
-				read_success = true;
-			}
-			else {
-				// Line starts with '#', get next line
-				run_again = true;
-				if(DEBUG_INPUT)
-					puts("Ignoring line");
-			}
-		}
-		else {
-			// Failed to read next line
-			run_again = false;
-			read_success = false;
-		}
+// Get the x-coordinate of node i
+double Input::getX_i(int i) {
+	// Range check..
+	if(i < 0 || i >= N) {
+		fprintf(stderr,"[ERROR:Input::getX_i] Bad index : %d\n", i);
+		exit(1);
 	}
 
-	if(DEBUG_INPUT)
-		printf("Return Line: \"%s\"\n", (*line).c_str());
-
-	return read_success;
+	return vNodeLst.at(i).getX();
 }
+
+// Get the y-coordinate of node i
+double Input::getY_i(int i) {
+	// Range check..
+	if(i < 0 || i >= N) {
+		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		exit(1);
+	}
+
+	return vNodeLst.at(i).getY();
+}
+
+// Get the z-coordinate of node i
+double Input::getZ_i(int i) {
+	// Range check..
+	if(i < 0 || i >= N) {
+		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		exit(1);
+	}
+
+	return vNodeLst.at(i).getZ();
+}
+
+// Get node i's safe altitude
+double Input::getZs_i(int i) {
+	// Range check..
+	if(i < 0 || i >= N) {
+		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		exit(1);
+	}
+
+	return vNodeLst.at(i).getZs();
+}
+
+// Get node i's data quantity to collect
+double Input::getQ_i(int i) {
+	// Range check..
+	if(i < 0 || i >= N) {
+		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		exit(1);
+	}
+
+	return vNodeLst.at(i).getQ();
+}
+
+// Get data TX parameters for node i
+void Input::getTXParams_i(int i, double* a, double* b, double* mrate) {
+	// Range check..
+	if(i < 0 || i >= N) {
+		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		exit(1);
+	}
+
+	vNodeLst.at(i).getTXParams(a, b, mrate);
+}
+
+// Get the "agnostic" max TX range for node i
+double Input::getR_i(int i) {
+	// Range check..
+	if(i < 0 || i >= N) {
+		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		exit(1);
+	}
+
+	return vNodeLst.at(i).getR();
+}
+
+
