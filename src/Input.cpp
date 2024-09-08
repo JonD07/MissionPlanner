@@ -114,7 +114,7 @@ double Input::getV_l(int l) {
 // Get the time to swap batteries of drone l
 // TODO: Don't just return a constant!!
 double Input::getTb_l(int l) {
-	return 60.0;
+	return 120.0;
 }
 
 // Get the x-coordinate of node i

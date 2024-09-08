@@ -18,27 +18,47 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		env.start();
 		GRBModel model = GRBModel(env);
 		model.set(GRB_IntParam_NonConvex, 2);
-		model.set(GRB_DoubleParam_TimeLimit, 20.0);
+		model.set(GRB_DoubleParam_TimeLimit, 100.0);
 
 		//
 		/// Create variables
 		//
-		// Create position variables for each node
+
+		// Create position variables for each waypoint
 		std::vector<GRBVar> X_i;
 		std::vector<GRBVar> Y_i;
+		std::vector<GRBVar> Z_i;
 		for(int i = 0; i < input->getN(); i++) {
 			GRBVar x = model.addVar(-GRB_INFINITY, GRB_INFINITY, 0.0, GRB_CONTINUOUS, "x_" + itos(i));
 			GRBVar y = model.addVar(-GRB_INFINITY, GRB_INFINITY, 0.0, GRB_CONTINUOUS, "y_" + itos(i));
-			x.set(GRB_DoubleAttr_Start, input->getX_b());
-			y.set(GRB_DoubleAttr_Start, input->getY_b());
+			GRBVar z = model.addVar(input->getZs_i(i), GRB_INFINITY, 0.0, GRB_CONTINUOUS, "z_" + itos(i));
+			x.set(GRB_DoubleAttr_Start, input->getX_i(i));
+			y.set(GRB_DoubleAttr_Start, input->getY_i(i));
+			z.set(GRB_DoubleAttr_Start, input->getZs_i(i));
 
 			X_i.push_back(x);
 			Y_i.push_back(y);
+			Z_i.push_back(z);
+		}
+
+		// Create position variables for each node (relaxed on node position)
+		std::vector<GRBVar> Xn_i;
+		std::vector<GRBVar> Yn_i;
+		std::vector<GRBVar> Zn_i;
+		for(int i = 0; i < input->getN(); i++) {
+			GRBVar x = model.addVar(CONST_RELAXATION(input->getX_i(i)), 0.0, GRB_CONTINUOUS, "xn_" + itos(i));
+			GRBVar y = model.addVar(CONST_RELAXATION(input->getY_i(i)), 0.0, GRB_CONTINUOUS, "yn_" + itos(i));
+			GRBVar z = model.addVar(CONST_RELAXATION(input->getZ_i(i)), 0.0, GRB_CONTINUOUS, "zn_" + itos(i));
+
+			Xn_i.push_back(x);
+			Yn_i.push_back(y);
+			Zn_i.push_back(z);
 		}
 
 		// Create position variables for base station
 		GRBVar X_b = model.addVar(CONST_RELAXATION(input->getX_b()), 0.0, GRB_CONTINUOUS, "x_b");
 		GRBVar Y_b = model.addVar(CONST_RELAXATION(input->getY_b()), 0.0, GRB_CONTINUOUS, "y_b");
+		GRBVar Z_b = model.addVar(CONST_RELAXATION(input->getZ_b()), 0.0, GRB_CONTINUOUS, "z_b");
 
 		// Create i->j sub-tour visit flags
 		std::vector<std::vector<std::vector<std::vector<GRBVar>>>> E_lijk;
@@ -127,6 +147,14 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 			for(int k = 0; k < input->getN(); k++) {
 				// Does drone l use sub-tour k?
 				GRBVar u = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "u_" + itos(l) + itos(k));
+
+				if(k > 0) {
+					u.set(GRB_DoubleAttr_Start, 0);
+				}
+				else {
+					u.set(GRB_DoubleAttr_Start, 1);
+				}
+
 				sub_tour.push_back(u);
 			}
 			// Push sub-tour
@@ -163,14 +191,6 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 			T_lk.push_back(sub_tour);
 		}
 
-		// Create distance bs ->i variables
-		std::vector<GRBVar> D_bi;
-		for(int i = 0; i < input->getN(); i++) {
-			// Distance from waypoint i to j
-			GRBVar d = model.addVar(0.0, GRB_INFINITY, 0.0, GRB_CONTINUOUS,  "db_" + itos(i));
-			D_bi.push_back(d);
-		}
-
 		// Create distance i -> j variables
 		std::vector<std::vector<GRBVar>> D_ij;
 		for(int i = 0; i < input->getN(); i++) {
@@ -185,11 +205,35 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 			D_ij.push_back(node_j);
 		}
 
+		// Create distance bs ->i variables
+		std::vector<GRBVar> D_bi;
+		for(int i = 0; i < input->getN(); i++) {
+			// Distance from BS to waypoint i
+			GRBVar d = model.addVar(0.0, GRB_INFINITY, 0.0, GRB_CONTINUOUS,  "db_" + itos(i));
+			D_bi.push_back(d);
+		}
+
+		// Create distance node_i -> wp_i variables
+		std::vector<GRBVar> Dn_i;
+		for(int i = 0; i < input->getN(); i++) {
+			// Distance from node i to waypoint i
+			GRBVar d = model.addVar(0.1, GRB_INFINITY, 0.0, GRB_CONTINUOUS,  "dn_" + itos(i));
+			Dn_i.push_back(d);
+		}
+
+		// Create extra dummy distance node_i -> wp_i variables
+		std::vector<GRBVar> Dnd_i;
+		for(int i = 0; i < input->getN(); i++) {
+			// Distance from node i to waypoint i
+			GRBVar d = model.addVar(0.1, GRB_INFINITY, 0.0, GRB_CONTINUOUS,  "dd_" + itos(i));
+			Dnd_i.push_back(d);
+		}
+
 		// Create waypoint/node sequence variable
 		std::vector<GRBVar> U_i;
 		for(int i = 0; i < input->getN(); i++) {
 			// Sequence number for waypoint i
-			GRBVar w = model.addVar(0.0, GRB_INFINITY, 0.0, GRB_INTEGER,  "w_" + itos(i));
+			GRBVar w = model.addVar(0.0, input->getN(), 0.0, GRB_INTEGER,  "w_" + itos(i));
 			U_i.push_back(w);
 		}
 
@@ -200,6 +244,18 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 			GRBVar t = model.addVar(0.0, GRB_INFINITY, 0.0, GRB_CONTINUOUS,  "ts_" + itos(i));
 			Ts_i.push_back(t);
 		}
+
+		// Create TX rate variable
+		std::vector<GRBVar> R_i;
+		for(int i = 0; i < input->getN(); i++) {
+			// Get battery details
+			double a, b, mrate;
+			input->getTXParams_i(i, &a, &b, &mrate);
+			// Sequence number for waypoint i
+			GRBVar r = model.addVar(0.0, mrate, 0.0, GRB_CONTINUOUS,  "r_" + itos(i));
+			R_i.push_back(r);
+		}
+
 
 		//
 		/// Create constraints
@@ -241,7 +297,7 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		// Track distance from waypoint-to-waypoint
 		for(int i = 0; i < input->getN(); i++) {
 			for(int j = 0; j < input->getN(); j++) {
-				model.addQConstr(D_ij.at(i).at(j)*D_ij.at(i).at(j) >= (X_i.at(i)-X_i.at(j))*(X_i.at(i)-X_i.at(j)) + (Y_i.at(i)-Y_i.at(j))*(Y_i.at(i)-Y_i.at(j)), "D_"+itos(i)+itos(j)+"_geq_dist");
+				model.addQConstr(D_ij.at(i).at(j)*D_ij.at(i).at(j) >= (X_i.at(i)-X_i.at(j))*(X_i.at(i)-X_i.at(j)) + (Y_i.at(i)-Y_i.at(j))*(Y_i.at(i)-Y_i.at(j)) + (Z_i.at(i)-Z_i.at(j))*(Z_i.at(i)-Z_i.at(j)), "D_"+itos(i)+itos(j)+"_geq_dist");
 			}
 		}
 
@@ -280,7 +336,7 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 
 		// Track distance from BS-to-waypoint
 		for(int i = 0; i < input->getN(); i++) {
-			model.addQConstr(D_bi.at(i)*D_bi.at(i) >= (X_i.at(i)-X_b)*(X_i.at(i)-X_b) + (Y_i.at(i)-Y_b)*(Y_i.at(i)-Y_b), "D_b"+itos(i)+"_geq_dist");
+			model.addQConstr(D_bi.at(i)*D_bi.at(i) >= (X_i.at(i)-X_b)*(X_i.at(i)-X_b) + (Y_i.at(i)-Y_b)*(Y_i.at(i)-Y_b) + (Z_i.at(i)-Z_b)*(Z_i.at(i)-Z_b), "D_b"+itos(i)+"_geq_dist");
 		}
 
 		// If we use sub-tour k, then we have to leave the BS
@@ -374,6 +430,36 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 			}
 		}
 
+		// Track distance from node-to-waypoint
+		for(int i = 0; i < input->getN(); i++) {
+			model.addQConstr(Dn_i.at(i)*Dn_i.at(i) >= (X_i.at(i)-Xn_i.at(i))*(X_i.at(i)-Xn_i.at(i)) + (Y_i.at(i)-Yn_i.at(i))*(Y_i.at(i)-Yn_i.at(i)) + (Z_i.at(i)-Zn_i.at(i))*(Z_i.at(i)-Zn_i.at(i)), "Dn_"+itos(i)+"_geq_dist");
+		}
+
+		// Limit TX rate
+		for(int i = 0; i < input->getN(); i++) {
+			// Get battery details
+			double a, b, mrate;
+			input->getTXParams_i(i, &a, &b, &mrate);
+			model.addQConstr(R_i.at(i)*Dnd_i.at(i) - b*Dnd_i.at(i) <= a, "R_"+itos(i)+"_leq_math");
+		}
+
+		// Limit service time
+		for(int i = 0; i < input->getN(); i++) {
+			model.addQConstr(Ts_i.at(i)*R_i.at(i) >= input->getQ_i(i), "R_"+itos(i)+"_geq_Q/Ts");
+		}
+
+		// Track distance from node-to-waypoint
+		for(int i = 0; i < input->getN(); i++) {
+			model.addQConstr(Dnd_i.at(i) - Dn_i.at(i)*Dn_i.at(i) >= 0, "Dnd_"+itos(i)+"_geq_Dn");
+		}
+
+		// Order sub-tours
+		for(int l = 0; l < input->getM(); l++) {
+			for(int k = 0; k < input->getN()-1; k++) {
+				model.addConstr(W_lk.at(l).at(k) >= W_lk.at(l).at(k+1), "W_"+itos(l)+itos(k)+"_geq_W+1");
+			}
+		}
+
 
 
 		//
@@ -434,7 +520,7 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 			// Each hovering location
 			printf("Hovering Order and Locations:\n");
 			for(int i = 0; i < input->getN(); i++) {
-				printf(" %d : %f (%f, %f)\n", i, U_i.at(i).get(GRB_DoubleAttr_X), X_i.at(i).get(GRB_DoubleAttr_X), Y_i.at(i).get(GRB_DoubleAttr_X));
+				printf(" %d : %f (%f, %f, %f)\n", i, U_i.at(i).get(GRB_DoubleAttr_X), X_i.at(i).get(GRB_DoubleAttr_X), Y_i.at(i).get(GRB_DoubleAttr_X), Z_i.at(i).get(GRB_DoubleAttr_X));
 			}
 
 			// Tour variables...
