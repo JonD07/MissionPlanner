@@ -42,6 +42,8 @@ set(sources src/main.cpp)
 
 add_executable(${CMAKE_PROJECT_NAME}
 	${sources}
+	src/Drone.cpp
+	src/DroneGenerator.cpp
 	src/FileReader.cpp
 	src/Input.cpp
 	src/Node.cpp

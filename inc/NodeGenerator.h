@@ -30,7 +30,7 @@ public:
 
 	// Takes in a node string and returns a node. The string is expected to be in this format:
 	//  x_1 y_1 z_1 zs_1 q_1 t_1
-	Node GenerateNode(int id, std::string& node_string);
+	Node* GenerateNode(int id, std::string& node_string);
 private:
 	// Path to node data file
 	std::string data_fileName;

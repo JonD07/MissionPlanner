@@ -18,7 +18,8 @@
 #define PRINT_RESULTS	0
 #define DATA_LOG_FORMAT	"alg_%d.dat"
 #define DATA_LOG_DEFLT_PATH	""
-#define DATA_NODE_DATA_PATH	"../node_data.dat"
+#define NODE_DATA_PATH	"../data/node_data.dat"
+#define DRONE_DATA_PATH	"../data/drone_data.dat"
 
 
 int main(int argc, char *argv[]) {
@@ -64,7 +65,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	Solver* solver = NULL;
-	Input input(argv[1], DATA_NODE_DATA_PATH, numUAVs);
+	Input input(argv[1]);
 	Solution solution(&input);
 
 	switch(algorithm) {
@@ -76,6 +77,7 @@ int main(int argc, char *argv[]) {
 	default:
 		// No valid algorithm given
 		fprintf(stderr, "[ERROR][main] : \n\tInvalid algorithm identifier!\n");
+		printf("%d",numUAVs);
 		exit(1);
 	}
 

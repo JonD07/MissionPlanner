@@ -18,7 +18,7 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		env.start();
 		GRBModel model = GRBModel(env);
 		model.set(GRB_IntParam_NonConvex, 2);
-		model.set(GRB_DoubleParam_TimeLimit, 100.0);
+		model.set(GRB_DoubleParam_TimeLimit, 20.0);
 
 		//
 		/// Create variables
@@ -31,10 +31,10 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		for(int i = 0; i < input->getN(); i++) {
 			GRBVar x = model.addVar(-GRB_INFINITY, GRB_INFINITY, 0.0, GRB_CONTINUOUS, "x_" + itos(i));
 			GRBVar y = model.addVar(-GRB_INFINITY, GRB_INFINITY, 0.0, GRB_CONTINUOUS, "y_" + itos(i));
-			GRBVar z = model.addVar(input->getZs_i(i), GRB_INFINITY, 0.0, GRB_CONTINUOUS, "z_" + itos(i));
+			GRBVar z = model.addVar(input->getZ_i(i) + input->getZs_i(i), GRB_INFINITY, 0.0, GRB_CONTINUOUS, "z_" + itos(i));
 			x.set(GRB_DoubleAttr_Start, input->getX_i(i));
 			y.set(GRB_DoubleAttr_Start, input->getY_i(i));
-			z.set(GRB_DoubleAttr_Start, input->getZs_i(i));
+			z.set(GRB_DoubleAttr_Start, input->getZ_i(i) + input->getZs_i(i));
 
 			X_i.push_back(x);
 			Y_i.push_back(y);
@@ -264,33 +264,38 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		// Constrain each sub-tour time
 		for(int l = 0; l < input->getM(); l++) {
 			for(int k = 0; k < input->getN(); k++) {
-				GRBQuadExpr lhs = T_lk.at(l).at(k);
+				GRBQuadExpr rhs = 0;
 
 				// Add in time to travel from i->j (if traveling from i->j)
 				for(int i = 0; i < input->getN(); i++) {
 					for(int j = 0; j < input->getN(); j++) {
-						lhs = lhs - D_ij.at(i).at(j)*E_lijk.at(l).at(i).at(j).at(k)*(1.0/input->getV_l(l));
+						rhs += D_ij.at(i).at(j)*E_lijk.at(l).at(i).at(j).at(k)*(1.0/input->getV_l(l));
 					}
 				}
 
-				// Add in time to travel from bs->i (if traveling from bs->j)
+				// Add in time to travel from bs->i (if traveling from bs->i)
 				for(int i = 0; i < input->getN(); i++) {
-					lhs = lhs - D_bi.at(i)*Eb_lik.at(l).at(i).at(k)*(1.0/input->getV_l(l));
+					rhs += D_bi.at(i)*Eb_lik.at(l).at(i).at(k)*(1.0/input->getV_l(l));
+				}
+
+				// Add in time to travel from i->bs (if traveling from bs->i)
+				for(int i = 0; i < input->getN(); i++) {
+					rhs += D_bi.at(i)*E_lik_b.at(l).at(i).at(k)*(1.0/input->getV_l(l));
 				}
 
 				// Add in time to service node i
 				for(int i = 0; i < input->getN(); i++) {
 					for(int j = 0; j < input->getN(); j++) {
-						lhs = lhs - Ts_i.at(i)*E_lijk.at(l).at(j).at(i).at(k);
+						rhs += Ts_i.at(i)*E_lijk.at(l).at(j).at(i).at(k);
 					}
 				}
 
 				// The first sub-tour is free... the rest need a battery swap
 				if(k > 0) {
-					lhs = lhs - input->getTb_l(l)*W_lk.at(l).at(k);
+					rhs += input->getTb_l(l)*W_lk.at(l).at(k);
 				}
 
-				model.addQConstr(lhs >= 0, "T_"+itos(l)+itos(k)+"_geq_tour_time");
+				model.addQConstr(T_lk.at(l).at(k) >= rhs, "T_"+itos(l)+itos(k)+"_geq_tour_time");
 			}
 		}
 
@@ -457,6 +462,39 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		for(int l = 0; l < input->getM(); l++) {
 			for(int k = 0; k < input->getN()-1; k++) {
 				model.addConstr(W_lk.at(l).at(k) >= W_lk.at(l).at(k+1), "W_"+itos(l)+itos(k)+"_geq_W+1");
+			}
+		}
+
+		// Constrain energy consumption (based on time)
+		for(int l = 0; l < input->getM(); l++) {
+			for(int k = 0; k < input->getN(); k++) {
+				GRBQuadExpr lhs = 0;
+
+				// Add in energy to travel from i->j (if traveling from i->j)
+				for(int i = 0; i < input->getN(); i++) {
+					for(int j = 0; j < input->getN(); j++) {
+						lhs += D_ij.at(i).at(j)*E_lijk.at(l).at(i).at(j).at(k)*(1.0/input->getV_l(l))*input->getRho_m(l);
+					}
+				}
+
+				// Add in energy to travel from bs->i (if traveling from bs->i)
+				for(int i = 0; i < input->getN(); i++) {
+					lhs += D_bi.at(i)*Eb_lik.at(l).at(i).at(k)*(1.0/input->getV_l(l))*input->getRho_m(l);
+				}
+
+				// Add in energy to travel from i->bs (if traveling from bs->i)
+				for(int i = 0; i < input->getN(); i++) {
+					lhs += D_bi.at(i)*E_lik_b.at(l).at(i).at(k)*(1.0/input->getV_l(l))*input->getRho_m(l);
+				}
+
+				// Add in time to service node i
+				for(int i = 0; i < input->getN(); i++) {
+					for(int j = 0; j < input->getN(); j++) {
+						lhs += Ts_i.at(i)*E_lijk.at(l).at(j).at(i).at(k)*input->getRho_h(l);
+					}
+				}
+
+				model.addQConstr(lhs <= input->getB_l(l), "T_"+itos(l)+itos(k)+"_geq_tour_time");
 			}
 		}
 

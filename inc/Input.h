@@ -20,11 +20,14 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
+#include <boost/numeric/conversion/cast.hpp>
 
 #include "defines.h"
-#include "Node.h"
 #include "FileReader.h"
+#include "Node.h"
 #include "NodeGenerator.h"
+#include "Drone.h"
+#include "DroneGenerator.h"
 
 
 #define DEBUG_INPUT	DEBUG || 1
@@ -46,7 +49,7 @@ struct BaseStation {
 
 class Input {
 public:
-	Input(std::string input_path, std::string data_path, int m);
+	Input(std::string scenario_input_path);
 	virtual ~Input();
 
 	/// Getters
@@ -58,6 +61,12 @@ public:
 	double getV_l(int l);
 	// Get the time to swap batteries of drone l
 	double getTb_l(int l);
+	// Get rho for moving for drone l
+	double getRho_m(int l);
+	// Get rho for moving for drone l
+	double getRho_h(int l);
+	// Get beta for drone l (planning energy budget, in Jule)
+	double getB_l(int l);
 	// Get the x-coordinate of node i
 	double getX_i(int i);
 	// Get the y-coordinate of node i
@@ -80,17 +89,10 @@ public:
 	double getZ_b() { return mBaseStation.fZ; }
 
 protected:
-//	// Get next line from input an input file, ignores lines that start with '#'
-//	bool getNextLine(std::ifstream* file, std::string* line);
-
 
 private:
 	// Path to input file
 	std::string input_fileName;
-	// File reader, for handling text file input
-	FileReader fileReader;
-	// Node generator
-	NodeGenerator nodeGenerator;
 
 	// Number of nodes
 	int N;
@@ -98,7 +100,9 @@ private:
 	int M;
 
 	// Vector to hold all of the nodes in this graph
-	std::vector<Node> vNodeLst;
+	std::vector<Node*> vNodeLst;
+	// Vector to hold all drones
+	std::vector<Drone*> vDroneLst;
 	// Base station node
 	BaseStation mBaseStation;
 };

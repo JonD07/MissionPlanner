@@ -71,7 +71,7 @@ NodeGenerator::~NodeGenerator() {}
 
 // Takes in a node string and returns a node. The string is expected to be in this format:
 //  x_1 y_1 z_1 zs_1 q_1 t_1
-Node NodeGenerator::GenerateNode(int id, std::string& node_string) {
+Node* NodeGenerator::GenerateNode(int id, std::string& node_string) {
 	std::stringstream lineStream_i(node_string);
 	// x_1 y_1 z_1 zs_1 q_1 t_1
 	double x, y, z, zs, q;
@@ -85,10 +85,10 @@ Node NodeGenerator::GenerateNode(int id, std::string& node_string) {
 	lineStream_i >> t;
 
 	if(nodeParameters.count(t) > 0) {
-		return Node(id, x, y, z, zs, q, t, nodeParameters.at(t));
+		return new Node(id, x, y, z, zs, q, t, nodeParameters.at(t));
 	}
 	else {
 		// Bad type, just assume it is type 0
-		return Node(id, x, y, z, zs, q, t, nodeParameters.at(0));
+		return new Node(id, x, y, z, zs, q, t, nodeParameters.at(0));
 	}
 }
