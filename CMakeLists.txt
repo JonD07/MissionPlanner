@@ -45,10 +45,12 @@ add_executable(${CMAKE_PROJECT_NAME}
 	src/Drone.cpp
 	src/DroneGenerator.cpp
 	src/FileReader.cpp
+	src/HLOptimizer.cpp
 	src/Input.cpp
 	src/Node.cpp
 	src/NodeGenerator.cpp
 	src/Solution.cpp
+	src/Solver_Greedy.cpp
 	src/Solver_Opt.cpp
 	src/Solver.cpp
 	src/Utilities.cpp

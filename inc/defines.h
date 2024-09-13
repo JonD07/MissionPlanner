@@ -18,4 +18,5 @@
 
 enum {
 	e_Algo_OPTIMAL = 0,
+	e_Algo_GREEDY = 1,
 };
