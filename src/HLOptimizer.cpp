@@ -211,6 +211,12 @@ void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 			}
 		}
 
+		// Save the solution into the cords array
+		for(int j = 0; j < M_k; j++) {
+			std::tuple<double,double,double> drone_local(X_j.at(j).get(GRB_DoubleAttr_X), Y_j.at(j).get(GRB_DoubleAttr_X), Z_j.at(j).get(GRB_DoubleAttr_X));
+			cords->at(j) = drone_local;
+		}
+
 	} catch(GRBException e) {
 		std::cout << "Error code = " << e.getErrorCode() << std::endl;
 		std::cout << e.getMessage() << std::endl;

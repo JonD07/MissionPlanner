@@ -19,7 +19,32 @@
 
 #define DEBUG_SOL	DEBUG || 0
 
-using namespace std::complex_literals;
+
+struct HoveringLocation {
+	double fX, fY, fZ;
+	int nodeServiced;
+
+	HoveringLocation(double x, double y, double z, int node) {
+		fX = x;
+		fY = y;
+		fZ = z;
+		nodeServiced = node;
+	}
+	HoveringLocation(const HoveringLocation& other) {
+		fX = other.fX;
+		fY = other.fY;
+		fZ = other.fZ;
+		nodeServiced = other.nodeServiced;
+	}
+	HoveringLocation& operator=(const HoveringLocation& other) {
+		fX = other.fX;
+		fY = other.fY;
+		fZ = other.fZ;
+		nodeServiced = other.nodeServiced;
+		return *this;
+	}
+};
+
 
 class Solution {
 public:
@@ -30,18 +55,18 @@ public:
 
 	// Prints this solution
 	void PrintSolution();
-	// Assigns agent i to task j for task-slot k
-	void Update(int i, int j, int k);
 	/*
 	 * Determines the probability reward gained for the stored solution
 	 */
 	double Benchmark();
 	// Determines if this is a valid assignment solution (doesn't break constraints)
 	bool ValidSolution();
-
-	// Solution space - assigned tasks (NxM)
-	bool*** X_ijk;
+	// Place a hovering location into sub-tour k of drone l
+	void AddHL(int l, int k, const HoveringLocation& hl);
 
 private:
 	Input* m_input;
+	std::vector<std::vector<std::vector<HoveringLocation>>> tours_lkj;
+
+	void setupEmptySolution();
 };

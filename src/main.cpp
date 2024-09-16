@@ -107,6 +107,7 @@ int main(int argc, char *argv[]) {
 	if(SANITY_PRINT) {
 		printf("\nFound solution: %f\n", result);
 		printf("Computation time = %f s\n", duration_s);
+		solution.PrintSolution();
 	}
 
 	// Print results to file

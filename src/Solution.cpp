@@ -3,101 +3,44 @@
 Solution::Solution(Input* input) {
 	// Initialize the size information
 	m_input = input;
+	setupEmptySolution();
 
 	if(DEBUG_SOL)
-		printf("New Solution I from Input: N = %d, M = %d\n", m_input->getN(), m_input->getM());
-
-	// Dynamically allocate memory for I_ij
-	X_ijk = new bool**[m_input->getN()];
-	for(int i = 0; i < m_input->getN(); ++i) {
-		X_ijk[i] = new bool*[m_input->getM()];
-		for(int j = 0; j < m_input->getM(); ++j) {
-			X_ijk[i][j] = new bool[m_input->getM()];
-			for(int k = 0; k < m_input->getM(); ++k) {
-				X_ijk[i][j][k] = 0;
-			}
-		}
-	}
+		printf("New Solution from Input: N = %d, M = %d\n", m_input->getN(), m_input->getM());
 }
 
 Solution::Solution(const Solution &other) {
 	// Initialize the size information
 	m_input = other.m_input;
-
-	// Dynamically allocate memory for I_ij
-	X_ijk = new bool**[m_input->getN()];
-	for(int i = 0; i < m_input->getN(); ++i) {
-		X_ijk[i] = new bool*[m_input->getM()];
-		for(int j = 0; j < m_input->getM(); ++j) {
-			X_ijk[i][j] = new bool[m_input->getM()];
-			for(int k = 0; k < m_input->getM(); ++k) {
-				X_ijk[i][j][k] = other.X_ijk[i][j][k];
-			}
-		}
-	}
+	setupEmptySolution();
 }
 
 Solution& Solution::operator=(const Solution &other) {
 	// Initialize the size information
 	m_input = other.m_input;
-
-	// Dynamically allocate memory for I_ij
-	X_ijk = new bool**[m_input->getN()];
-	for(int i = 0; i < m_input->getN(); ++i) {
-		X_ijk[i] = new bool*[m_input->getM()];
-		for(int j = 0; j < m_input->getM(); ++j) {
-			X_ijk[i][j] = new bool[m_input->getM()];
-			for(int k = 0; k < m_input->getM(); ++k) {
-				X_ijk[i][j][k] = other.X_ijk[i][j][k];
-			}
-		}
-	}
+	setupEmptySolution();
 
 	return *this;
 }
 
-Solution::~Solution() {
-	for(int i = 0; i < m_input->getN(); ++i) {
-		for(int j = 0; j < m_input->getM(); ++j) {
-			delete[] X_ijk[i][j];
-		}
-		delete[] X_ijk[i];
-	}
-	delete[] X_ijk;
-}
+Solution::~Solution() {}
 
 
 // Prints this solution
 void Solution::PrintSolution() {
-	// Print solution
-	printf("X_ijk:\n");
-	for(int i = 0; i < m_input->getN(); ++i) {
-		printf(" i = %d:  \n", i);
-		for(int j = 0; j < m_input->getM(); ++j) {
-			for(int k = 0; k < m_input->getM(); ++k) {
-				printf("%d ", X_ijk[i][j][k]);
+	for(int l = 0; l < m_input->getM(); l++) {
+		for(int k = 0; k < m_input->getN(); k++) {
+			int prev = -1;
+			for(HoveringLocation hl : tours_lkj.at(l).at(k)) {
+				printf(" %d:%d %d->%d (%f, %f, %f)\n", l, k, prev, hl.nodeServiced, hl.fX, hl.fY, hl.fZ);
+				prev = hl.nodeServiced;
 			}
-			printf("\n");
+			if(prev >= 0) {
+				printf(" %d:%d %d->BS\n", l, k, prev);
+			}
 		}
 	}
 }
-
-// Assigns agent i to task j, updates i's position and traversed distance
-void Solution::Update(int i, int j, int k) {
-	// Need to update: I_ij, x_i, traversed-i
-	if(DEBUG_SOL)
-		printf("Assigning %d to %d for slot %d\n", i, j, k);
-
-	// Clear all other assignments for k
-	for(int k_i = 0; k_i < m_input->getM(); k_i++) {
-		// Reset all I_ij for this i
-		X_ijk[i][j][k_i] = false;
-	}
-
-	// Assign i to j for slot k
-	X_ijk[i][j][k] = true;
-}
-
 
 /*
  * TODO: Determines the probability reward gained for the stored solution
@@ -106,12 +49,31 @@ double Solution::Benchmark() {
 	return 100.0;
 }
 
-
 // TODO: Determines if this is a valid assignment solution (doesn't break constraints)
 bool Solution::ValidSolution() {
 	/// Check each set of constraints
 	bool valid = true;
 
 	return valid;
+}
+
+// Place a hovering location into sub-tour k of drone l
+void Solution::AddHL(int l, int k, const HoveringLocation& hl) {
+	if(l >= 0 && l < m_input->getM()) {
+		if(k >= 0 && k < m_input->getN()) {
+			tours_lkj.at(l).at(k).push_back(hl);
+		}
+	}
+}
+
+void Solution::setupEmptySolution() {
+	for(int l = 0; l < m_input->getM(); l++) {
+		std::vector<std::vector<HoveringLocation>> drone_l;
+		for(int k = 0; k < m_input->getN(); k++) {
+			std::vector<HoveringLocation> sub_tour_k;
+			drone_l.push_back(sub_tour_k);
+		}
+		tours_lkj.push_back(drone_l);
+	}
 }
 

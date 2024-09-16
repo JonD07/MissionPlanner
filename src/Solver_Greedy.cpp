@@ -31,43 +31,61 @@ void Solver_Greedy::Solve(Input* input, Solution* I_crnt) {
 	}
 
 	bool increase_k = true;
+	int k = 0;
 	do {
-		/// For each sub-tour index k
-		for(int k = 0; k < input->getM(); k++) {
-			/// For each drone
-			for(int l = 0; l < input->getM(); l++) {
-				// Set drone location
-				double drone_x = input->getX_b(), drone_y = input->getY_b(), drone_z = input->getZ_b();
-				/// While still adding nodes..
-				while(true) {
-					/// Find closest node
-					double min_dist = std::numeric_limits<double>::max();
-					int next_node = -1;
-					for(int i = 0; i < input->getN(); i++) {
-						// Is this node already covered?
-						if(!nodes_visited.at(i)) {
-							// Is this node closer than the current?
-							double dist_to_node = distAtoB(drone_x, drone_y, drone_z, input->getX_i(i), input->getY_i(i), input->getZ_i(i));
-							if(dist_to_node < min_dist) {
-								// Found better candidate node
-								next_node = i;
-							}
+		// Record where each drone is located
+		std::vector<std::tuple<double,double,double>> drone_locals;
+		std::vector<bool> drone_active;
+		for(int l = 0; l < input->getM(); l++) {
+			std::tuple<double,double,double> drone_local(input->getX_b(), input->getY_b(), input->getZ_b());
+			drone_locals.push_back(drone_local);
+			drone_active.push_back(true);
+		}
+
+		/// Fill drone task queues, in turn
+		int l = 0;
+		bool drones_active = true;
+		do {
+			if(drone_active.at(l)) {
+				double drone_x = std::get<0>(drone_locals.at(l)), drone_y = std::get<1>(drone_locals.at(l)), drone_z = std::get<2>(drone_locals.at(l));
+				/// Find closest node
+				double min_dist = std::numeric_limits<double>::max();
+				int next_node = -1;
+				for(int i = 0; i < input->getN(); i++) {
+					// Is this node already covered?
+					if(!nodes_visited.at(i)) {
+						// Is this node closer than the current?
+						double dist_to_node = distAtoB(drone_x, drone_y, drone_z, input->getX_i(i), input->getY_i(i), input->getZ_i(i));
+						if(dist_to_node < min_dist) {
+							// Found better candidate node
+							next_node = i;
 						}
 					}
+				}
 
-					/// Verify energy or something here...
-					if(next_node >= 0) {
-						// Visit this node
-						nodes_visited.at(next_node) = true;
-						sub_tours_lk.at(l).at(k).push_back(next_node);
-					}
-					else {
-						// Assumed to return to base here...
-						break;
+				/// TODO: Verify energy or something here...
+				if(next_node >= 0) {
+					// Visit this node
+					nodes_visited.at(next_node) = true;
+					sub_tours_lk.at(l).at(k).push_back(next_node);
+					// Update drone position
+					std::tuple<double,double,double> drone_local(input->getX_i(next_node), input->getY_i(next_node), input->getZ_i(next_node));
+					drone_locals.at(l) = drone_local;
+				}
+				else {
+					// Assumed to return to base here...
+					drone_active.at(l) = false;
+
+					// Are there any other drones still active?
+					drones_active = false;
+					for(int l = 0; l < input->getM(); l++) {
+						drones_active |= drone_active.at(l);
 					}
 				}
 			}
-		}
+
+			l = (l+1)%input->getM();
+		} while(drones_active);
 
 		// Determine if we visited all of the nodes
 		bool all_visited = true;
@@ -75,24 +93,14 @@ void Solver_Greedy::Solve(Input* input, Solution* I_crnt) {
 			all_visited &= nodes_visited.at(i);
 		}
 
-		/// If all nodes were visited..
-		if(all_visited) {
-			// Found basic solution, stop increasing sub-tours
-			increase_k = false;
+		/// If there are still nodes that haven't been visited...
+		if(!all_visited) {
+			// increase k
+			increase_k = true;
 		}
 		else {
-			// Not a valid solution, increase k
-			increase_k = true;
-			// Reset visited list
-			for(int i = 0; i < input->getN(); i++) {
-				nodes_visited.at(i) = false;
-			}
-			// Clear solution
-			for(int l = 0; l < input->getM(); l++) {
-				for(int k = 0; k < input->getN(); k++) {
-					sub_tours_lk.at(l).at(k).clear();
-				}
-			}
+			// Done!
+			increase_k = false;
 		}
 	} while(increase_k);
 
@@ -105,6 +113,9 @@ void Solver_Greedy::Solve(Input* input, Solution* I_crnt) {
 				for(int i : sub_tours_lk.at(l).at(k)) {
 					printf(" %d: %d -> %d on tour %d\n", l, prev, i, k);
 					prev = i;
+				}
+				if(prev >= 0) {
+					printf(" %d: %d -> -1 on tour %d\n", l, prev, k);
 				}
 			}
 		}
@@ -121,8 +132,15 @@ void Solver_Greedy::Solve(Input* input, Solution* I_crnt) {
 					std::tuple<double,double,double> coord;
 					coords.push_back(coord);
 				}
+
 				// Run optimizer
 				hlOptimizer.Optimize(l, input, &sub_tours_lk.at(l).at(k), &coords);
+
+				// Store the found solution
+				for(int i = 0; i < boost::numeric_cast<int>(sub_tours_lk.at(l).at(k).size()); i++) {
+					HoveringLocation hl(std::get<0>(coords.at(i)), std::get<1>(coords.at(i)), std::get<2>(coords.at(i)), sub_tours_lk.at(l).at(k).at(i));
+					I_crnt->AddHL(l,k,hl);
+				}
 			}
 		}
 	}
