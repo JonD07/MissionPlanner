@@ -14,7 +14,7 @@ void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 		env.set("LogFile", "mip1.log");
 		env.start();
 		GRBModel model = GRBModel(env);
-//		model.set(GRB_IntParam_NonConvex, 2);
+		model.set(GRB_IntParam_NonConvex, 2);
 		model.set(GRB_DoubleParam_TimeLimit, 20.0);
 
 		//
@@ -119,23 +119,6 @@ void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 			model.addQConstr(Dn_j.at(j)*Dn_j.at(j) >= (X_j.at(j)-Xn_j.at(j))*(X_j.at(j)-Xn_j.at(j)) + (Y_j.at(j)-Yn_j.at(j))*(Y_j.at(j)-Yn_j.at(j)) + (Z_j.at(j)-Zn_j.at(j))*(Z_j.at(j)-Zn_j.at(j)), "Dn_"+itos(j)+"_geq_dist");
 		}
 
-		// Limit TX rate
-		for(int j = 0; j < M_k; j++) {
-			// Get battery details for this node
-			int i = sub_tour->at(j);
-			double a, b, r_m;
-			input->getTXParams_i(i, &a, &b, &r_m);
-
-			// Determine line equation to approximate TX rate curve
-			double y1 = r_m;
-			double x1 = sqrt(a/(y1-b));
-			double y2 = r_m/2.0;
-			double x2 = sqrt(a/(y2-b));
-			double m = (y2-y1)/(x2-x1);
-
-			model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
-		}
-
 		// Limit service time
 		for(int j = 0; j < M_k; j++) {
 			int i = sub_tour->at(j);
@@ -161,6 +144,44 @@ void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 
 			model.addConstr(lhs <= input->getB_l(l), "pT_l_leq_b");
 		}
+
+		// Limit TX rate (Single linear approximation)
+		for(int j = 0; j < M_k; j++) {
+			// Get battery details for this node
+			int i = sub_tour->at(j);
+			double a, b, r_m;
+			input->getTXParams_i(i, &a, &b, &r_m);
+
+			// Determine line equation to approximate TX rate curve
+			double y1 = r_m;
+			double x1 = sqrt(a/(y1-b));
+			double y2 = r_m/2.0;
+			double x2 = sqrt(a/(y2-b));
+			double m = (y2-y1)/(x2-x1);
+
+			model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
+		}
+
+//		// Limit TX rate (PWL approximation)
+//		for(int j = 0; j < M_k; j++) {
+//			// Get battery details for this node
+//			int i = sub_tour->at(j);
+//			double a, b, r_m;
+//			input->getTXParams_i(i, &a, &b, &r_m);
+//
+//			// Compute points (D, R) of R = a/(D)^2 + b for some step length
+//			double intv = 2.0;
+//			double xmax = 200.0;
+//			int len = (int) ceil(xmax/intv) + 1;
+//			double* xpts = new double[len];
+//			double* upts = new double[len];
+//			for(int i = 0; i < len; i++) {
+//				xpts[i] = i*intv;
+//				upts[i] = std::min(a/pow(i*intv, 2) + b, r_m);
+//			}
+//			model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), len, xpts, upts, "R_"+itos(j)+"_leq_math");
+//		}
+
 
 
 

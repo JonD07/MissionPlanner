@@ -7,24 +7,31 @@ Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_pa
 	M = 0;
 
 	/*
-	  Expected file structure:
-		N
-		x_1 y_1 z_1 zs_1 q_1 t_1
-		....
-		x_n y_n z_n zs_n q_n t_n
-		x_b y_b z_b
+	  Expected input file structure:
+		Location of node data file
+		Location of drone data file
+		Location of problem input file
+		Drone 1 type
+		Drone 1 set speed and portion of battery to use
+		...
+		Drone m type
+		Drone m set speed and portion of battery to use
 
 	  Example:
-		# 5 sensors
-		5
-		# Sensor data...
-		109.9 75.1  21.1 1.5 25.0 1
-		150.8 172.6 35.3 0.8 40.0 1
-		58.8  176.8 3.5  1.0 10.0 0
-		130.7 141.6 34.2 0.5 40.0 0
-		84.7  161.9 4.5  2.0 10.0 0
-		# Base station
-		31.1  125.4 2.0
+		# Location of node data file
+		../data/node_data.dat
+		# Location of drone data file
+		../data/drone_data.dat
+		# Location of problem input file
+		../Experiment01/plot_5_0.txt
+		# Drone type
+		0
+		# Set speed: 15, Portion of battery to use: 100%
+		15.0 1.0
+		# Drone type
+		1
+		# Set speed: 12, Portion of battery to use: 100%
+		12.0 1.0
 
 	 * NOTE: We ignore lines that start with '#'
 	 */
@@ -99,6 +106,29 @@ Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_pa
 				read_success = false;
 			}
 		}
+
+		/*
+		  Expected input file structure:
+			N
+			x_1 y_1 z_1 zs_1 q_1 t_1
+			....
+			x_n y_n z_n zs_n q_n t_n
+			x_b y_b z_b
+
+		  Example:
+			# 5 sensors
+			5
+			# Sensor data...
+			109.9 75.1  21.1 1.5 25.0 1
+			150.8 172.6 35.3 0.8 40.0 1
+			58.8  176.8 3.5  1.0 10.0 0
+			130.7 141.6 34.2 0.5 40.0 0
+			84.7  161.9 4.5  2.0 10.0 0
+			# Base station
+			31.1  125.4 2.0
+
+		 * NOTE: We ignore lines that start with '#'
+		 */
 
 		// Create file reader for problem input file
 		FileReader inputFileReader(input_line);
