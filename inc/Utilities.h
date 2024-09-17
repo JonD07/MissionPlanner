@@ -24,5 +24,7 @@ bool floatEquality(double a, double b);
 
 // Returns the distance from point (x_1, y_1) to point (x_2, y_2)
 double distAtoB(double x_1, double y_1, double x_2, double y_2);
+// Returns the distance from point (x_1, y_1, z_1) to point (x_2, y_2, z_2)
+double distAtoB(double x_1, double y_1, double z_1, double x_2, double y_2, double z_2);
 
 std::string itos(int i);

@@ -14,6 +14,10 @@ double distAtoB(double x_1, double y_1, double x_2, double y_2) {
 	return sqrt(pow((x_1 - x_2), 2) + pow((y_1 - y_2), 2));
 }
 
+double distAtoB(double x_1, double y_1, double z_1, double x_2, double y_2, double z_2) {
+	return sqrt(pow((x_1 - x_2), 2) + pow((y_1 - y_2), 2) + pow((z_1 - z_2), 2));
+}
+
 std::string itos(int i) {
     std::stringstream s;
     s << i;

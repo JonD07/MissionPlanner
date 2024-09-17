@@ -7,6 +7,7 @@
 #include "Input.h"
 #include "Solution.h"
 #include "Solver.h"
+#include "Solver_Greedy.h"
 #include "Solver_Opt.h"
 
 
@@ -69,8 +70,15 @@ int main(int argc, char *argv[]) {
 	Solution solution(&input);
 
 	switch(algorithm) {
+	// Optimal solver
 	case e_Algo_OPTIMAL: {
 		solver = new Solver_Opt();
+	}
+	break;
+
+	// Greedy solver (more for mucking about with code base than actually useful)
+	case e_Algo_GREEDY: {
+		solver = new Solver_Greedy();
 	}
 	break;
 
@@ -99,6 +107,7 @@ int main(int argc, char *argv[]) {
 	if(SANITY_PRINT) {
 		printf("\nFound solution: %f\n", result);
 		printf("Computation time = %f s\n", duration_s);
+		solution.PrintSolution();
 	}
 
 	// Print results to file

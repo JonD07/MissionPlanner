@@ -161,20 +161,20 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 			W_lk.push_back(sub_tour);
 		}
 
-		// Create energy budget variables
-		std::vector<std::vector<GRBVar>> B_lk;
-		// For each drone
-		for(int l = 0; l < input->getM(); l++) {
-			// For each sub-tour
-			std::vector<GRBVar> sub_tour;
-			for(int k = 0; k < input->getN(); k++) {
-				// Energy spent by l on sub-tour k
-				GRBVar b = model.addVar(-GRB_INFINITY, GRB_INFINITY, 0.0, GRB_CONTINUOUS,  "b_" + itos(l) + itos(k));
-				sub_tour.push_back(b);
-			}
-			// Push sub-tour
-			B_lk.push_back(sub_tour);
-		}
+//		// Create energy budget variables
+//		std::vector<std::vector<GRBVar>> B_lk;
+//		// For each drone
+//		for(int l = 0; l < input->getM(); l++) {
+//			// For each sub-tour
+//			std::vector<GRBVar> sub_tour;
+//			for(int k = 0; k < input->getN(); k++) {
+//				// Energy spent by l on sub-tour k
+//				GRBVar b = model.addVar(-GRB_INFINITY, GRB_INFINITY, 0.0, GRB_CONTINUOUS,  "b_" + itos(l) + itos(k));
+//				sub_tour.push_back(b);
+//			}
+//			// Push sub-tour
+//			B_lk.push_back(sub_tour);
+//		}
 
 		// Create sub-tour time duration variables
 		std::vector<std::vector<GRBVar>> T_lk;
@@ -494,7 +494,7 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 					}
 				}
 
-				model.addQConstr(lhs <= input->getB_l(l), "T_"+itos(l)+itos(k)+"_geq_tour_time");
+				model.addQConstr(lhs <= input->getB_l(l), "pT_"+itos(l)+itos(k)+"_leq_b");
 			}
 		}
 
