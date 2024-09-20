@@ -14,6 +14,7 @@
 #include <vector>
 #include <cmath>
 #include <complex>
+#include <cstring>
 
 #include "Input.h"
 
@@ -55,6 +56,8 @@ public:
 
 	// Prints this solution
 	void PrintSolution();
+	// Prints plan file
+	void PrintPlan();
 	/*
 	 * Determines the probability reward gained for the stored solution
 	 */

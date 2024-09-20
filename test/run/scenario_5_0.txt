@@ -10,6 +10,6 @@
 # Set speed: 15, Portion of battery to use: 100%
 15.0 1.0
 # Drone type
-1
+#1
 # Set speed: 12, Portion of battery to use: 100%
-12.0 1.0
+#12.0 1.0

@@ -77,6 +77,8 @@ public:
 	double getZs() { return fZSafe; }
 	// Get this node's data quantity to collect
 	double getQ() { return fQ; }
+	// Get this node's type
+	int getType() { return nNodeType; }
 	// Get data TX parameters
 	void getTXParams(double* a, double* b, double* mrate);
 	// Get the "agnostic" max TX range
@@ -98,7 +100,7 @@ private:
 	// Quantity of data to collect
 	double fQ;
 	// Node type (used for determining communication parameters)
-	double nNodeType;
+	int nNodeType;
 	// Node parameters object
 	NodeParameters oNodeParameters;
 };

@@ -329,6 +329,17 @@ double Input::getQ_i(int i) {
 	return vNodeLst.at(i)->getQ();
 }
 
+// Get i's node type
+int Input::getNodeType_i(int i) {
+	// Range check..
+	if(i < 0 || i >= N) {
+		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		exit(1);
+	}
+
+	return vNodeLst.at(i)->getType();
+}
+
 // Get data TX parameters for node i
 void Input::getTXParams_i(int i, double* a, double* b, double* mrate) {
 	// Range check..

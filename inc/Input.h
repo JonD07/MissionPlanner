@@ -77,6 +77,8 @@ public:
 	double getZs_i(int i);
 	// Get node i's data quantity to collect
 	double getQ_i(int i);
+	// Get i's node type
+	int getNodeType_i(int i);
 	// Get data TX parameters for node i
 	void getTXParams_i(int i, double* a, double* b, double* mrate);
 	// Get the "agnostic" max TX range for node i

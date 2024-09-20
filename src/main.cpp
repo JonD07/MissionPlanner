@@ -28,14 +28,14 @@ int main(int argc, char *argv[]) {
 
 	// Run parameters
 	int algorithm = 0;
-	int numUAVs = 2;
 	int density = 150;
+	bool printPlan = false;
 	bool printResults = false;
 	std::string outputPath = "";
 
 	// Verify user input
 	if(argc < 2) {
-		fprintf(stderr, "Received %d args, expected 2 or more.\nExpected use:\t./mission-planner <file path> [algorithm] [number of UAVs] [node density] [print results] [file path]\n\n", (argc-1));
+		fprintf(stderr, "Received %d args, expected 2 or more.\nExpected use:\t./mission-planner <file path> [algorithm] [print plan] [number of UAVs] [node density] [print results] [file path]\n\n", (argc-1));
 		exit(1);
 	}
 
@@ -44,22 +44,22 @@ int main(int argc, char *argv[]) {
 	}
 	else if(argc == 4) {
 		algorithm = atoi(argv[2]);
-		numUAVs = atoi(argv[3]);
+		printPlan = atoi(argv[3]);
 	}
 	else if(argc == 5) {
 		algorithm = atoi(argv[2]);
-		numUAVs = atoi(argv[3]);
+		printPlan = atoi(argv[3]);
 		density = atoi(argv[4]);
 	}
 	else if(argc == 6) {
 		algorithm = atoi(argv[2]);
-		numUAVs = atoi(argv[3]);
+		printPlan = atoi(argv[3]);
 		density = atoi(argv[4]);
 		printResults = atoi(argv[5]);
 	}
 	else if(argc == 7) {
 		algorithm = atoi(argv[2]);
-		numUAVs = atoi(argv[3]);
+		printPlan = atoi(argv[3]);
 		density = atoi(argv[4]);
 		printResults = atoi(argv[5]);
 		outputPath = std::string(argv[5]);
@@ -85,7 +85,6 @@ int main(int argc, char *argv[]) {
 	default:
 		// No valid algorithm given
 		fprintf(stderr, "[ERROR][main] : \n\tInvalid algorithm identifier!\n");
-		printf("%d",numUAVs);
 		exit(1);
 	}
 
@@ -123,6 +122,12 @@ int main(int argc, char *argv[]) {
 		fprintf(pOutputFile, "%d %d %d ", input.getN(), input.getM(), density);
 		fprintf(pOutputFile, "%.10f %f\n", result, duration_s);
 		fclose(pOutputFile);
+	}
+
+	// Print flight plan?
+	if(printPlan) {
+		// Yes, print flight plan!
+		solution.PrintPlan();
 	}
 
 	delete solver;
