@@ -1,9 +1,9 @@
 #include "Node.h"
 
-Node::Node() : nID(-1), fX(0), fY(0), fZ(0), fZSafe(0), fQ(0), nNodeType(-1) {}
+Node::Node() : nID(-1), fX(0), fY(0), fZ(0), fZSafe(0), fQ(0), nNodeType(-1), sIP("localhost") {}
 
-Node::Node(int id, double x, double y, double z, double zs, double q, int type, NodeParameters& nodeParameters) :
-		nID(id), fX(x), fY(y), fZ(z), fZSafe(zs), fQ(q), nNodeType(type), oNodeParameters(nodeParameters) {}
+Node::Node(int id, double x, double y, double z, double zs, double q, int type, NodeParameters& nodeParameters, std::string ip) :
+		nID(id), fX(x), fY(y), fZ(z), fZSafe(zs), fQ(q), nNodeType(type), oNodeParameters(nodeParameters), sIP(ip) {}
 
 
 Node::Node(const Node &n) {
@@ -15,6 +15,7 @@ Node::Node(const Node &n) {
 	fQ = n.fQ;
 	nNodeType = n.nNodeType;
 	oNodeParameters = n.oNodeParameters;
+	sIP = n.sIP;
 }
 
 Node::~Node() {}
@@ -24,9 +25,15 @@ Node& Node::operator=(const Node& other) {
 	if (this == &other)
 		return *this;
 
-	this->nID = other.nID;
-	this->fX = other.fX;
-	this->fY = other.fY;
+	nID = other.nID;
+	fX = other.fX;
+	fY = other.fY;
+	fZ = other.fZ;
+	fZSafe = other.fZSafe;
+	fQ = other.fQ;
+	nNodeType = other.nNodeType;
+	oNodeParameters = other.oNodeParameters;
+	sIP = other.sIP;
 
 	return *this;
 }

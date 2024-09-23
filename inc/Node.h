@@ -11,6 +11,7 @@
 
 #include <math.h>
 #include <algorithm>
+#include <string>
 
 #include "defines.h"
 
@@ -59,7 +60,7 @@ struct NodeParameters {
 class Node {
 public:
 	Node();
-	Node(int id, double x, double y, double z, double zs, double q, int type, NodeParameters& nodeParameters);
+	Node(int id, double x, double y, double z, double zs, double q, int type, NodeParameters& nodeParameters, std::string ip);
 	Node(const Node &n);
 	~Node();
 
@@ -79,6 +80,8 @@ public:
 	double getQ() { return fQ; }
 	// Get this node's type
 	int getType() { return nNodeType; }
+	// Get this node's type
+	std::string getIP() { return sIP; }
 	// Get data TX parameters
 	void getTXParams(double* a, double* b, double* mrate);
 	// Get the "agnostic" max TX range
@@ -103,6 +106,8 @@ private:
 	int nNodeType;
 	// Node parameters object
 	NodeParameters oNodeParameters;
+	// Node IP address (not used in solver but helpful later on)
+	std::string sIP;
 };
 
 

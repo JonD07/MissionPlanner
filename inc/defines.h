@@ -15,8 +15,3 @@
 #define EPSILON			0.000001
 #define INF				1000000000000
 #define PI				3.14159265
-
-enum {
-	e_Algo_OPTIMAL = 0,
-	e_Algo_GREEDY = 1,
-};

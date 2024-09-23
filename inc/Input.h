@@ -7,12 +7,6 @@
  * Description: General Input class used to help process
  *  text file problem inputs.
  *
- *
- * Things that seem to be missing from the input..:
- *   1. Node data load (impacts time to collect data)
- *   2. Drone data..? Do we want heterogeneous drones? We at least need something for drone budgets
- *   3. Parameters to determine how long it will take to collect data from the node
- *
  */
 
 #pragma once
@@ -49,7 +43,6 @@ struct BaseStation {
 
 class Input {
 public:
-	Input(std::string scenario_input_path);
 	virtual ~Input();
 
 	/// Getters
@@ -89,12 +82,24 @@ public:
 	double getY_b() { return mBaseStation.fY; }
 	// Get the z-coordinate of the base station
 	double getZ_b() { return mBaseStation.fZ; }
+	// Get a pointer to node i
+	Node* getNode_i(int i);
 
 protected:
+	// Protected contructor (we don't want people creating inputs, need to create a child class)
+	Input(std::string scenario_input_path);
 
-private:
+	// Read status
+	bool read_success = true;
+
 	// Path to input file
 	std::string input_fileName;
+	std::string node_line;
+	std::string drone_line;
+	std::string input_line;
+
+	// The rest of the input
+	std::vector<std::string> scenario_data;
 
 	// Number of nodes
 	int N;
@@ -107,4 +112,6 @@ private:
 	std::vector<Drone*> vDroneLst;
 	// Base station node
 	BaseStation mBaseStation;
+
+private:
 };

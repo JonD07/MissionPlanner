@@ -75,20 +75,22 @@ Node* NodeGenerator::GenerateNode(int id, std::string& node_string) {
 	std::stringstream lineStream_i(node_string);
 	// x_1 y_1 z_1 zs_1 q_1 t_1
 	double x, y, z, zs, q;
-	int t;
+	int type;
+	std::string ip;
 
 	lineStream_i >> x;
 	lineStream_i >> y;
 	lineStream_i >> z;
 	lineStream_i >> zs;
 	lineStream_i >> q;
-	lineStream_i >> t;
+	lineStream_i >> type;
+	lineStream_i >> ip;
 
-	if(nodeParameters.count(t) > 0) {
-		return new Node(id, x, y, z, zs, q, t, nodeParameters.at(t));
+	if(nodeParameters.count(type) > 0) {
+		return new Node(id, x, y, z, zs, q, type, nodeParameters.at(type), ip);
 	}
 	else {
 		// Bad type, just assume it is type 0
-		return new Node(id, x, y, z, zs, q, t, nodeParameters.at(0));
+		return new Node(id, x, y, z, zs, q, type, nodeParameters.at(0), ip);
 	}
 }

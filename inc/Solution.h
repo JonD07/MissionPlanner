@@ -65,7 +65,7 @@ public:
 	// Determines if this is a valid assignment solution (doesn't break constraints)
 	bool ValidSolution();
 	// Place a hovering location into sub-tour k of drone l
-	void AddHL(int l, int k, const HoveringLocation& hl);
+	void AddHL(const HoveringLocation& hl, int l = 0, int k = 0);
 
 private:
 	Input* m_input;

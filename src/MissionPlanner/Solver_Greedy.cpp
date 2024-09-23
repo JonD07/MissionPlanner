@@ -59,6 +59,7 @@ void Solver_Greedy::Solve(Input* input, Solution* I_crnt) {
 						if(dist_to_node < min_dist) {
 							// Found better candidate node
 							next_node = i;
+							min_dist = dist_to_node;
 						}
 					}
 				}
@@ -139,7 +140,7 @@ void Solver_Greedy::Solve(Input* input, Solution* I_crnt) {
 				// Store the found solution
 				for(int i = 0; i < boost::numeric_cast<int>(sub_tours_lk.at(l).at(k).size()); i++) {
 					HoveringLocation hl(std::get<0>(coords.at(i)), std::get<1>(coords.at(i)), std::get<2>(coords.at(i)), sub_tours_lk.at(l).at(k).at(i));
-					I_crnt->AddHL(l,k,hl);
+					I_crnt->AddHL(hl,l,k);
 				}
 			}
 		}

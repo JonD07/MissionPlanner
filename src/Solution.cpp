@@ -66,10 +66,11 @@ void Solution::PrintPlan() {
 
 				// For each hovering location..
 				for(HoveringLocation hl : tours_lkj.at(l).at(k)) {
+					Node* n = m_input->getNode_i(hl.nodeServiced);
 					// Move to this location
 					fprintf(pOutputFile, "1 %f %f %f 1.0\n", hl.fX, hl.fY, hl.fZ);
 					// Service the node
-					fprintf(pOutputFile, "5 %d %f %f %f %f %f %d\n", hl.nodeServiced, hl.fX, hl.fY, hl.fZ, m_input->getZs_i(hl.nodeServiced), m_input->getQ_i(hl.nodeServiced), m_input->getNodeType_i(hl.nodeServiced));
+					fprintf(pOutputFile, "5 %d %f %f %f %f %f %d %s\n", hl.nodeServiced, n->getX(), n->getY(), n->getZ(), n->getZs(), n->getQ(), n->getType(), n->getIP().c_str());
 				}
 
 				// Return home
@@ -101,7 +102,7 @@ bool Solution::ValidSolution() {
 }
 
 // Place a hovering location into sub-tour k of drone l
-void Solution::AddHL(int l, int k, const HoveringLocation& hl) {
+void Solution::AddHL(const HoveringLocation& hl, int l, int k) {
 	if(l >= 0 && l < m_input->getM()) {
 		if(k >= 0 && k < m_input->getN()) {
 			tours_lkj.at(l).at(k).push_back(hl);

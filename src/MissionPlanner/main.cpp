@@ -4,7 +4,7 @@
 #include <chrono>
 
 #include "defines.h"
-#include "Input.h"
+#include "Offline_Input.h"
 #include "Solution.h"
 #include "Solver.h"
 #include "Solver_Greedy.h"
@@ -22,6 +22,11 @@
 #define NODE_DATA_PATH	"../data/node_data.dat"
 #define DRONE_DATA_PATH	"../data/drone_data.dat"
 
+
+enum {
+	e_Algo_OPTIMAL = 0,
+	e_Algo_GREEDY = 1,
+};
 
 int main(int argc, char *argv[]) {
 	srand(time(NULL));
@@ -66,7 +71,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	Solver* solver = NULL;
-	Input input(argv[1]);
+	Offline_Input input(argv[1]);
 	Solution solution(&input);
 
 	switch(algorithm) {

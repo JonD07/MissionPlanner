@@ -127,11 +127,25 @@ Drone* DroneGenerator::GenerateDrone(int type_ID, double usable_speed, double us
 		exit(1);
 	}
 
-	if(droneTypes.count(type_ID) > 0) {
-		return new Drone(usable_speed, usable_bat, droneTypes.at(type_ID));
+	// Were we given speed and battery data?
+	if(usable_speed > 0) {
+		// Use said data...
+		if(droneTypes.count(type_ID) > 0) {
+			return new Drone(usable_speed, usable_bat, droneTypes.at(type_ID));
+		}
+		else {
+			// Bad type, just assume it is type 0
+			return new Drone(usable_speed, usable_bat, droneTypes.at(0));
+		}
 	}
 	else {
-		// Bad type, just assume it is type 0
-		return new Drone(usable_speed, usable_bat, droneTypes.at(0));
+		// Not specified, just use max values
+		if(droneTypes.count(type_ID) > 0) {
+			return new Drone(droneTypes.at(type_ID).max_speed, droneTypes.at(type_ID).usable_jules, droneTypes.at(type_ID));
+		}
+		else {
+			// Bad type, just assume it is type 0
+			return new Drone(droneTypes.at(0).max_speed, droneTypes.at(0).usable_jules, droneTypes.at(0));
+		}
 	}
 }

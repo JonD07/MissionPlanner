@@ -11,11 +11,7 @@ Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_pa
 		Location of node data file
 		Location of drone data file
 		Location of problem input file
-		Drone 1 type
-		Drone 1 set speed and portion of battery to use
-		...
-		Drone m type
-		Drone m set speed and portion of battery to use
+		Scenario data... (depends on child-class)
 
 	  Example:
 		# Location of node data file
@@ -39,28 +35,23 @@ Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_pa
 	if(SANITY_PRINT)
 		printf("Reading input\n");
 
-	// Read status
-	bool read_success = true;
 
 	// File reader, for handling scenario file
 	FileReader scenarioFileReader(scenario_input_path);
 
 	// Get node data file
-	std::string node_line;
 	if(!scenarioFileReader.GetNextLine(&node_line)) {
 		// Line reading failed
 		read_success = false;
 	}
 
 	// Get drone data file
-	std::string drone_line;
 	if(read_success && !scenarioFileReader.GetNextLine(&drone_line)) {
 		// Line reading failed
 		read_success = false;
 	}
 
 	// Get problem input file
-	std::string input_line;
 	if(read_success && !scenarioFileReader.GetNextLine(&input_line)) {
 		// Line reading failed
 		read_success = false;
@@ -68,62 +59,35 @@ Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_pa
 
 	// Did we at least get all of the above?
 	if(read_success) {
-		// Node generator
-		NodeGenerator nodeGenerator(node_line);
-		// Drone generator
-		DroneGenerator droneGenerator(drone_line);
-
 		if(DEBUG_INPUT)
-			printf("Reading in drones:\n");
+			printf("Reading in scenario data:\n");
 
 		// Finish reading scenario file
-		std::string type_line;
-		while(scenarioFileReader.GetNextLine(&type_line) && read_success) {
-			// Grab drone type
-			int type;
-			std::stringstream typeStream(type_line);
-			typeStream >> type;
-
-			// Grab drone stats
-			double usable_speed, bat_share;
-			std::string parameter_line;
-			if(scenarioFileReader.GetNextLine(&parameter_line)) {
-				std::stringstream parameterStream(parameter_line);
-				parameterStream >> usable_speed;
-				parameterStream >> bat_share;
-
-				// Create a new drone
-				Drone* drone = droneGenerator.GenerateDrone(type, usable_speed, bat_share);
-				vDroneLst.push_back(drone);
-
-				if(DEBUG_INPUT)
-					printf(" %d: %d, v = %f, prct-bat = %f\n", M, type, usable_speed, bat_share);
-
-				M++;
-			}
-			else {
-				// Line reading failed
-				read_success = false;
-			}
+		std::string next_line;
+		while(scenarioFileReader.GetNextLine(&next_line) && read_success) {
+			scenario_data.push_back(next_line);
 		}
 
+		if(DEBUG_INPUT)
+			printf("Reading in node setup\n");
 		/*
+		  Read node input data
 		  Expected input file structure:
 			N
-			x_1 y_1 z_1 zs_1 q_1 t_1
+			x_1 y_1 z_1 zs_1 q_1 t_1 ip_1
 			....
-			x_n y_n z_n zs_n q_n t_n
+			x_n y_n z_n zs_n q_n t_n ip_n
 			x_b y_b z_b
 
 		  Example:
 			# 5 sensors
 			5
 			# Sensor data...
-			109.9 75.1  21.1 1.5 25.0 1
-			150.8 172.6 35.3 0.8 40.0 1
-			58.8  176.8 3.5  1.0 10.0 0
-			130.7 141.6 34.2 0.5 40.0 0
-			84.7  161.9 4.5  2.0 10.0 0
+			109.9 75.1  21.1 1.5 25.0 1 127.0.0.1
+			150.8 172.6 35.3 0.8 40.0 1 127.0.0.1
+			58.8  176.8 3.5  1.0 10.0 0 127.0.0.1
+			130.7 141.6 34.2 0.5 40.0 0 127.0.0.1
+			84.7  161.9 4.5  2.0 10.0 0 127.0.0.1
 			# Base station
 			31.1  125.4 2.0
 
@@ -132,6 +96,8 @@ Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_pa
 
 		// Create file reader for problem input file
 		FileReader inputFileReader(input_line);
+		// Node generator
+		NodeGenerator nodeGenerator(node_line);
 
 		// Open file
 		std::string line;
@@ -360,6 +326,17 @@ double Input::getR_i(int i) {
 	}
 
 	return vNodeLst.at(i)->getR();
+}
+
+// Get a pointer to node i
+Node* Input::getNode_i(int i) {
+	// Range check..
+	if(i < 0 || i >= N) {
+		fprintf(stderr,"[ERROR:Input::getNode_i] Bad index : %d\n", i);
+		exit(1);
+	}
+
+	return vNodeLst.at(i);
 }
 
 
