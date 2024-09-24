@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
 	// Print flight plan?
 	if(print_plan) {
 		// Yes, print flight plan!
-		solution.PrintPlan();
+		solution.PrintPlan(false);
 	}
 
 	delete solver;

@@ -32,7 +32,7 @@ class HLOptimizer {
 public:
 	HLOptimizer();
 
-	void Optimize(int l, Input* input, const std::vector<int>* sub_tour, std::vector<std::tuple<double,double,double>>* cords);
+	void Optimize(int l, Input* input, const std::vector<int>* sub_tour, std::vector<std::tuple<double,double,double>>* cords, bool aprx_tx_curve = false);
 
 protected:
 private:

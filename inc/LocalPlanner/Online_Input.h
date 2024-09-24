@@ -13,7 +13,7 @@
 #include "Input.h"
 
 
-#define DEBUG_ONLINEINPUT	DEBUG || 1
+#define DEBUG_ONLINEINPUT	DEBUG || 0
 
 
 class Online_Input : public Input {

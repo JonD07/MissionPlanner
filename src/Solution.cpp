@@ -43,7 +43,7 @@ void Solution::PrintSolution() {
 }
 
 // Prints plan file
-void Solution::PrintPlan() {
+void Solution::PrintPlan(bool from_launch) {
 	// Cycle through drones
 	for(int l = 0; l < m_input->getM(); l++) {
 		// Cycle through sub-tours for drone l
@@ -61,8 +61,11 @@ void Solution::PrintPlan() {
 					printf(" Printing plan-%d-%d to: %s\n", l, k, buff);
 				pOutputFile = fopen(buff, "w");
 
-				// Take off
-				fprintf(pOutputFile, "0 10\n");
+				// Do we need to take off?
+				if(from_launch) {
+					// Take off
+					fprintf(pOutputFile, "0 10\n");
+				}
 
 				// For each hovering location..
 				for(HoveringLocation hl : tours_lkj.at(l).at(k)) {

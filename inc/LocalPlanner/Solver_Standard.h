@@ -19,7 +19,7 @@
 #include "gurobi_c++.h"
 #include "Online_Input.h"
 
-#define DEBUG_SLVR_STD		DEBUG || 1
+#define DEBUG_SLVR_STD		DEBUG || 0
 
 #define CONST_RELAXATION(X)		X,X+0.1
 

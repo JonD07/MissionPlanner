@@ -4,7 +4,7 @@
 HLOptimizer::HLOptimizer() {}
 
 
-void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour, std::vector<std::tuple<double,double,double>>* cords) {
+void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour, std::vector<std::tuple<double,double,double>>* cords, bool aprx_tx_curve) {
 	int M_k = boost::numeric_cast<int>(sub_tour->size());
 	try {
 		//
@@ -14,8 +14,10 @@ void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 		env.set("LogFile", "mip1.log");
 		env.start();
 		GRBModel model = GRBModel(env);
-		model.set(GRB_IntParam_NonConvex, 2);
-		model.set(GRB_DoubleParam_TimeLimit, 20.0);
+		if(aprx_tx_curve) {
+			model.set(GRB_IntParam_NonConvex, 2);
+			model.set(GRB_DoubleParam_TimeLimit, 20.0);
+		}
 
 		//
 		/// Create variables
@@ -145,44 +147,50 @@ void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 			model.addConstr(lhs <= input->getB_l(l), "pT_l_leq_b");
 		}
 
-		// Limit TX rate (Single linear approximation)
-		for(int j = 0; j < M_k; j++) {
-			// Get battery details for this node
-			int i = sub_tour->at(j);
-			double a, b, r_m;
-			input->getTXParams_i(i, &a, &b, &r_m);
+		// Limit TX rate
+		if(aprx_tx_curve) {
+			// Use a PWL approximation
+			for(int j = 0; j < M_k; j++) {
+				// Get battery details for this node
+				int i = sub_tour->at(j);
+				double a, b, r_m;
+				input->getTXParams_i(i, &a, &b, &r_m);
 
-			// Determine line equation to approximate TX rate curve
-			double y1 = r_m;
-			double x1 = sqrt(a/(y1-b));
-			double y2 = r_m/2.0;
-			double x2 = sqrt(a/(y2-b));
-			double m = (y2-y1)/(x2-x1);
-
-			model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
+				// Compute points (D, R) of R = a/(D)^2 + b for some step length
+				double intv = 2.0;
+				double xmax = 150.0;
+				int len = (int) ceil((xmax-sqrt(a/(r_m-b)))/intv) + 1;
+				double* xpts = new double[len];
+				double* upts = new double[len];
+				xpts[0] = 0.0;
+				upts[0] = r_m;
+				xpts[1] = sqrt(a/(r_m-b));
+				upts[1] = r_m;
+				for(int i = 2; i < len; i++) {
+					xpts[i] = i*intv + sqrt(a/(r_m-b));
+					upts[i] = std::min(a/pow(i*intv, 2) + b, r_m);
+				}
+				model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), len, xpts, upts, "R_"+itos(j)+"_leq_math");
+			}
 		}
+		else {
+			// Single linear approximation (fast!)
+			for(int j = 0; j < M_k; j++) {
+				// Get battery details for this node
+				int i = sub_tour->at(j);
+				double a, b, r_m;
+				input->getTXParams_i(i, &a, &b, &r_m);
 
-//		// Limit TX rate (PWL approximation)
-//		for(int j = 0; j < M_k; j++) {
-//			// Get battery details for this node
-//			int i = sub_tour->at(j);
-//			double a, b, r_m;
-//			input->getTXParams_i(i, &a, &b, &r_m);
-//
-//			// Compute points (D, R) of R = a/(D)^2 + b for some step length
-//			double intv = 2.0;
-//			double xmax = 200.0;
-//			int len = (int) ceil(xmax/intv) + 1;
-//			double* xpts = new double[len];
-//			double* upts = new double[len];
-//			for(int i = 0; i < len; i++) {
-//				xpts[i] = i*intv;
-//				upts[i] = std::min(a/pow(i*intv, 2) + b, r_m);
-//			}
-//			model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), len, xpts, upts, "R_"+itos(j)+"_leq_math");
-//		}
+				// Determine line equation to approximate TX rate curve
+				double y1 = r_m;
+				double x1 = sqrt(a/(y1-b));
+				double y2 = r_m/2.0;
+				double x2 = sqrt(a/(y2-b));
+				double m = (y2-y1)/(x2-x1);
 
-
+				model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
+			}
+		}
 
 
 		//

@@ -28,10 +28,12 @@
 
 class Solver_Greedy : public Solver {
 public:
-	Solver_Greedy();
+	Solver_Greedy(bool pwlApprx = false);
 
 	void Solve(Input* input, Solution* I_final);
 
 protected:
 private:
+	// Used to for a peice-wise linear approximation of the TX curve (not always fast...)
+	bool pwl_apprx;
 };

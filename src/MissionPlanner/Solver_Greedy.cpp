@@ -1,10 +1,11 @@
 #include "Solver_Greedy.h"
 
 
-Solver_Greedy::Solver_Greedy() {
+Solver_Greedy::Solver_Greedy(bool pwlApprx) {
 	if(SANITY_PRINT)
 		printf("Hello from Greedy Solver!\n");
 	srand (time(NULL));
+	pwl_apprx = pwlApprx;
 }
 
 
@@ -135,7 +136,7 @@ void Solver_Greedy::Solve(Input* input, Solution* I_crnt) {
 				}
 
 				// Run optimizer
-				hlOptimizer.Optimize(l, input, &sub_tours_lk.at(l).at(k), &coords);
+				hlOptimizer.Optimize(l, input, &sub_tours_lk.at(l).at(k), &coords, pwl_apprx);
 
 				// Store the found solution
 				for(int i = 0; i < boost::numeric_cast<int>(sub_tours_lk.at(l).at(k).size()); i++) {

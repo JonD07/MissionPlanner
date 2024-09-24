@@ -26,6 +26,7 @@
 enum {
 	e_Algo_OPTIMAL = 0,
 	e_Algo_GREEDY = 1,
+	e_Algo_APX_GREEDY = 2,
 };
 
 int main(int argc, char *argv[]) {
@@ -84,6 +85,12 @@ int main(int argc, char *argv[]) {
 	// Greedy solver (more for mucking about with code base than actually useful)
 	case e_Algo_GREEDY: {
 		solver = new Solver_Greedy();
+	}
+	break;
+
+	// Greedy solver (more for mucking about with code base than actually useful)
+	case e_Algo_APX_GREEDY: {
+		solver = new Solver_Greedy(true);
 	}
 	break;
 

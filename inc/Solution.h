@@ -57,7 +57,7 @@ public:
 	// Prints this solution
 	void PrintSolution();
 	// Prints plan file
-	void PrintPlan();
+	void PrintPlan(bool from_launch = true);
 	/*
 	 * Determines the probability reward gained for the stored solution
 	 */
