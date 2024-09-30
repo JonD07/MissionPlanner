@@ -18,7 +18,7 @@
 120
 # Energy profile ( c1x^{3} + c2x^{2} + c3x + c4 )
 0.07 0.0391 -13.196 390.95
-## Drone energy model from "Looking before Crossing..."
+## Drone energy model from VICTOR-CPR
 2
 # Max speed
 12.0

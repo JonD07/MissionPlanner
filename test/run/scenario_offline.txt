@@ -1,0 +1,15 @@
+# Location of node data file
+../data/node_data.dat
+# Location of drone data file
+../data/drone_data.dat
+# Location of problem input file
+../Experiment1/plot_5_0.txt
+## Drone data
+# Drone type
+0
+# Set speed: 15, Portion of battery to use: 100%
+15.0 1.0
+# Drone type
+1
+# Set speed: 12, Portion of battery to use: 100%
+12.0 1.0
