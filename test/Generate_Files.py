@@ -1,9 +1,10 @@
 import random
 import math
 
-INC_NODES = True
-INC_ALPHA = True
-INC_DATA = True
+INC_NODES = False
+INC_ALPHA = False
+INC_DATA = False
+FW_TEST = True
 
 # Z coordinate range
 Z_MIN = -10
@@ -140,3 +141,29 @@ if INC_DATA:
 				# Record BS position
 				file.write(f"{x_b} {y_b} {y_b}\n")
 		q = q * Q_INC_FACTOR
+
+if FW_TEST:
+	FILE_PATH = "FW_Test/"
+	# Loop over the number of sensors to use (n)
+	for n in range(5, 35, 5):
+		# Generate NUM_PLOTS plots
+		for i in range(20):
+			# Find the max distance a sensor can from the origin
+			MAX_COORD = math.sqrt(n/ALPHA)
+			# Open the file
+			file_name = f"{FILE_PATH}plot_{n}_{i}.txt"
+			with open(file_name, 'w') as file:
+				# Number of nodes
+				file.write(f"{n}\n")
+				for l in range(n):
+					# For each node: x y z z_s Q(Mb) type ip-adrs
+					# Pick random coordinates
+					x = MAX_COORD * random.random() - MAX_COORD/2
+					y = MAX_COORD * random.random() - MAX_COORD/2
+					z = (Z_MAX - Z_MIN) * random.random() + Z_MIN
+					z_s = random.choice([5.0, 10, 15])
+					q = (10.0 - 0.5) * random.random() + 0.5
+					# Write the results to file
+					file.write(f"{x} {y} {z} {z_s} {q} "+get_rnd_node()+"\n")
+				# Record BS position
+				file.write(f"0 0 0\n")
