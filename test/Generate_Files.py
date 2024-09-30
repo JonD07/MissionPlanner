@@ -160,7 +160,7 @@ if FW_TEST:
 					# Pick random coordinates
 					x = MAX_COORD * random.random() - MAX_COORD/2
 					y = MAX_COORD * random.random() - MAX_COORD/2
-					z = (Z_MAX - Z_MIN) * random.random() + Z_MIN
+					z = 30 * random.random()
 					z_s = random.choice([5.0, 10, 15])
 					q = (10.0 - 0.5) * random.random() + 0.5
 					# Write the results to file
