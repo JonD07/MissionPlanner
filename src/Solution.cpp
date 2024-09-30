@@ -64,7 +64,7 @@ void Solution::PrintPlan(bool from_launch) {
 				// Do we need to take off?
 				if(from_launch) {
 					// Take off
-					fprintf(pOutputFile, "0 10\n");
+					fprintf(pOutputFile, "0 %f\n", START_AGL);
 				}
 
 				// For each hovering location..
@@ -72,18 +72,16 @@ void Solution::PrintPlan(bool from_launch) {
 					Node* n = m_input->getNode_i(hl.nodeServiced);
 					// Move to this location
 					fprintf(pOutputFile, "1 %f %f %f 1.0\n", hl.fX, hl.fY, hl.fZ);
-					// Service the node
-					fprintf(pOutputFile, "5 %d %f %f %f %f %f %d %s\n", hl.nodeServiced, n->getX(), n->getY(), n->getZ(), n->getZs(), n->getQ(), n->getType(), n->getIP().c_str());
+					// Service the node (cmd-5 node-x node-y node-z node-zs bytes-to-collect node-type node-ip)
+					fprintf(pOutputFile, "5 %d %f %f %f %f %f %d %s\n", hl.nodeServiced, n->getX(), n->getY(), n->getZ(), n->getZs(), n->getQ()*1000000.0, n->getType(), n->getIP().c_str());
 				}
 
 				// Return home
-				fprintf(pOutputFile, "2 10\n");
+				fprintf(pOutputFile, "2 %f\n", START_AGL);
 				// Land
 				fprintf(pOutputFile, "3\n");
 
-
 				fclose(pOutputFile);
-
 			}
 		}
 	}
@@ -93,13 +91,49 @@ void Solution::PrintPlan(bool from_launch) {
  * TODO: Determines the probability reward gained for the stored solution
  */
 double Solution::Benchmark() {
-	return 100.0;
+	double total_time = 0;
+
+	// Cycle through drones
+	for(int l = 0; l < m_input->getM(); l++) {
+		// Cycle through sub-tours for drone l
+		for(int k = 0; k < m_input->getN(); k++) {
+			// Does sub-tour k contain stops?
+			if(tours_lkj.at(l).at(k).size() > 0) {
+				// Is this a relaunch?
+				if(k > 0) {
+					// Yes, add in battery swap time
+					total_time += m_input->getTb_l(l);
+				}
+				// Track the time it takes to run this tour
+				double x_prev = m_input->getX_b(), y_prev = m_input->getY_b(), z_prev = m_input->getZ_b();
+
+				// For each stop on this tour
+				for(HoveringLocation hl : tours_lkj.at(l).at(k)) {
+					// Determine the distance from point to point
+					double dist_prv_nxt = distAtoB(x_prev, y_prev, z_prev, hl.fX, hl.fY, hl.fZ);
+					// Time to travel this distance
+					total_time += dist_prv_nxt/m_input->getV_l(l);
+
+					// Determine node service time..
+					Node* node_i = m_input->getNode_i(hl.nodeServiced);
+					total_time += node_i->collectionTime(hl.fX, hl.fY, hl.fZ);
+				}
+			}
+		}
+	}
+
+	return total_time;
 }
 
-// TODO: Determines if this is a valid assignment solution (doesn't break constraints)
+/*
+ * Determines if this is a valid assignment solution (doesn't break constraints).
+ * We do this by checking to see if each node is visited and checking the total
+ * energy used by each drone on each sub-tour.
+ */
 bool Solution::ValidSolution() {
-	/// Check each set of constraints
 	bool valid = true;
+
+	// TODO: This!!
 
 	return valid;
 }
@@ -111,6 +145,12 @@ void Solution::AddHL(const HoveringLocation& hl, int l, int k) {
 			tours_lkj.at(l).at(k).push_back(hl);
 		}
 	}
+}
+
+// Clears the current solution
+void Solution::ClearSolution() {
+	tours_lkj.clear();
+	setupEmptySolution();
 }
 
 void Solution::setupEmptySolution() {

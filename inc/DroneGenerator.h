@@ -20,7 +20,7 @@
 #include "Drone.h"
 #include "FileReader.h"
 
-#define DEBUG_DRONE_GEN	DEBUG || 1
+#define DEBUG_DRONE_GEN	DEBUG || 0
 
 
 class DroneGenerator {

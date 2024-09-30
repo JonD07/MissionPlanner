@@ -13,7 +13,7 @@
 
 #include "Input.h"
 
-#define DEBUG_OFFLINEINPUT	DEBUG || 1
+#define DEBUG_OFFLINEINPUT	DEBUG || 0
 
 
 class Offline_Input : public Input {

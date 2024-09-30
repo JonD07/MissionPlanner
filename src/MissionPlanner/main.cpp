@@ -7,8 +7,10 @@
 #include "Offline_Input.h"
 #include "Solution.h"
 #include "Solver.h"
+#include "Solver_Baseline.h"
 #include "Solver_Greedy.h"
 #include "Solver_Opt.h"
+#include "Solver_VRP.h"
 
 
 
@@ -27,21 +29,22 @@ enum {
 	e_Algo_OPTIMAL = 0,
 	e_Algo_GREEDY = 1,
 	e_Algo_APX_GREEDY = 2,
+	e_Algo_VRP = 3,
+	e_Algo_BASELINE = 4,
+	e_Algo_BL_NO_IMPRV = 5,
 };
 
 int main(int argc, char *argv[]) {
-	srand(time(NULL));
-
 	// Run parameters
 	int algorithm = 0;
-	int density = 150;
 	bool printPlan = false;
 	bool printResults = false;
 	std::string outputPath = "";
+	int run_number = 0;
 
 	// Verify user input
 	if(argc < 2) {
-		fprintf(stderr, "Received %d args, expected 2 or more.\nExpected use:\t./mission-planner <file path> [algorithm] [print plan] [number of UAVs] [node density] [print results] [file path]\n\n", (argc-1));
+		fprintf(stderr, "Received %d args, expected 2 or more.\nExpected use:\t./mission-planner <file path> [algorithm] [print plan] [print results] [file path] [run number]\n\n", (argc-1));
 		exit(1);
 	}
 
@@ -55,21 +58,24 @@ int main(int argc, char *argv[]) {
 	else if(argc == 5) {
 		algorithm = atoi(argv[2]);
 		printPlan = atoi(argv[3]);
-		density = atoi(argv[4]);
+		printResults = atoi(argv[4]);
 	}
 	else if(argc == 6) {
 		algorithm = atoi(argv[2]);
 		printPlan = atoi(argv[3]);
-		density = atoi(argv[4]);
-		printResults = atoi(argv[5]);
+		printResults = atoi(argv[4]);
+		outputPath = std::string(argv[5]);
 	}
 	else if(argc == 7) {
 		algorithm = atoi(argv[2]);
 		printPlan = atoi(argv[3]);
-		density = atoi(argv[4]);
-		printResults = atoi(argv[5]);
+		printResults = atoi(argv[4]);
 		outputPath = std::string(argv[5]);
+		run_number = atoi(argv[6]);
 	}
+
+	// Just to keep things consistent...
+	srand(run_number);
 
 	Solver* solver = NULL;
 	Offline_Input input(argv[1]);
@@ -91,6 +97,24 @@ int main(int argc, char *argv[]) {
 	// Greedy solver (more for mucking about with code base than actually useful)
 	case e_Algo_APX_GREEDY: {
 		solver = new Solver_Greedy(true);
+	}
+	break;
+
+	// Clustering followed by VRP algorithm (HL optimizing)
+	case e_Algo_VRP: {
+		solver = new Solver_VRP(false);
+	}
+	break;
+
+	// Clustering followed by VRP algorithm (tightening heuristic)
+	case e_Algo_BASELINE: {
+		solver = new Solver_Baseline(true);
+	}
+	break;
+
+	// Clustering followed by VRP algorithm (tightening heuristic)
+	case e_Algo_BL_NO_IMPRV: {
+		solver = new Solver_Baseline(false);
 	}
 	break;
 
@@ -131,7 +155,7 @@ int main(int argc, char *argv[]) {
 			printf(" Printing results to: %s\n", buff);
 		pOutputFile = fopen(buff, "a");
 		// File format: n m runmun computed_Z estimated_Z comp-time
-		fprintf(pOutputFile, "%d %d %d ", input.getN(), input.getM(), density);
+		fprintf(pOutputFile, "%d %d %d ", input.getN(), input.getM(), run_number);
 		fprintf(pOutputFile, "%.10f %f\n", result, duration_s);
 		fclose(pOutputFile);
 	}

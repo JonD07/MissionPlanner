@@ -43,10 +43,11 @@ double Node::GetDistanceTo(Node* n) {
 }
 
 // Get data TX parameters
-void Node::getTXParams(double* a, double* b, double* mrate) {
+void Node::getTXParams(double* a, double* b, double* max_rate, double* C) {
 	*a = oNodeParameters.A;
 	*b = oNodeParameters.B;
-	*mrate = oNodeParameters.maxRate;
+	*max_rate = oNodeParameters.maxRate;
+	*C = oNodeParameters.C;
 }
 
 // Get the "agnostic" max TX range

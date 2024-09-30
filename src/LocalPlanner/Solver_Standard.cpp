@@ -4,8 +4,7 @@
 
 Solver_Standard::Solver_Standard() {
 	if(SANITY_PRINT)
-		printf("Hello from Greedy Solver!\n");
-	srand (time(NULL));
+		printf("Hello from Standard Solver!\n");
 }
 
 
@@ -126,8 +125,8 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 		// Create TX rate variable for first node
 		GRBVar R_f;
 		{
-			double a, b, mrate;
-			input->getTXParams_i(firstNode_i, &a, &b, &mrate);
+			double a, b, mrate, C;
+			input->getTXParams_i(firstNode_i, &a, &b, &mrate, &C);
 			R_f = model.addVar(0.0, mrate, 0.0, GRB_CONTINUOUS,  "r_");
 		}
 
@@ -136,8 +135,8 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 		for(int j = 0; j < n_k; j++) {
 			int i = sub_tour->at(j);
 			// Get battery details
-			double a, b, mrate;
-			input->getTXParams_i(i, &a, &b, &mrate);
+			double a, b, mrate, C;
+			input->getTXParams_i(i, &a, &b, &mrate, &C);
 			// Sequence number for waypoint i
 			GRBVar r = model.addVar(0.0, mrate, 0.0, GRB_CONTINUOUS,  "r_" + itos(j));
 			R_j.push_back(r);
@@ -208,14 +207,14 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 		// Limit TX rate (Single linear approximation -- first node)
 		{
 			// Get battery details for this node
-			double a, b, r_m;
-			input->getTXParams_i(firstNode_i, &a, &b, &r_m);
+			double a, b, r_m, c;
+			input->getTXParams_i(firstNode_i, &a, &b, &r_m, &c);
 
 			// Determine line equation to approximate TX rate curve
 			double y1 = r_m;
-			double x1 = sqrt(a/(y1-b));
+			double x1 = sqrt(a/(y1-b) - c);
 			double y2 = r_m/2.0;
-			double x2 = sqrt(a/(y2-b));
+			double x2 = sqrt(a/(y2-b) - c);
 			double m = (y2-y1)/(x2-x1);
 
 			model.addQConstr(R_f <= m*(Dn_f - x1) + y1, "Rf_leq_math");
@@ -225,39 +224,18 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 		for(int j = 0; j < n_k; j++) {
 			// Get battery details for this node
 			int i = sub_tour->at(j);
-			double a, b, r_m;
-			input->getTXParams_i(i, &a, &b, &r_m);
+			double a, b, r_m, c;
+			input->getTXParams_i(i, &a, &b, &r_m, &c);
 
 			// Determine line equation to approximate TX rate curve
 			double y1 = r_m;
-			double x1 = sqrt(a/(y1-b));
+			double x1 = sqrt(a/(y1-b)-c);
 			double y2 = r_m/2.0;
-			double x2 = sqrt(a/(y2-b));
+			double x2 = sqrt(a/(y2-b)-c);
 			double m = (y2-y1)/(x2-x1);
 
 			model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
 		}
-
-//		// Limit TX rate (PWL approximation)
-//		for(int j = 0; j < M_k; j++) {
-//			// Get battery details for this node
-//			int i = sub_tour->at(j);
-//			double a, b, r_m;
-//			input->getTXParams_i(i, &a, &b, &r_m);
-//
-//			// Compute points (D, R) of R = a/(D)^2 + b for some step length
-//			double intv = 2.0;
-//			double xmax = 200.0;
-//			int len = (int) ceil(xmax/intv) + 1;
-//			double* xpts = new double[len];
-//			double* upts = new double[len];
-//			for(int i = 0; i < len; i++) {
-//				xpts[i] = i*intv;
-//				upts[i] = std::min(a/pow(i*intv, 2) + b, r_m);
-//			}
-//			model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), len, xpts, upts, "R_"+itos(j)+"_leq_math");
-//		}
-
 
 
 

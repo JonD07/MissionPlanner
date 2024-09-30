@@ -4,10 +4,10 @@ NodeGenerator::NodeGenerator(std::string data_path) : data_fileName(data_path), 
 	/*
 	  Expected data file structure:
 		ID_1
-		A_1 B_1 maxRate_1 sigma_1 R_1
+		A_1 B_1 maxRate_1 C_1 R_1
 		...
 		ID_n
-		A_n B_n maxRate_n sigma_n R_n
+		A_n B_n maxRate_n C_n R_n
 
 	  Example:
 		# Pi 3
@@ -35,18 +35,18 @@ NodeGenerator::NodeGenerator(std::string data_path) : data_fileName(data_path), 
 		idStream >> id;
 
 		// Grab node parameters
-		double a, b, maxR, sig, r;
+		double a, b, maxR, C, r;
 		std::string parameter_line;
 		if(fileReader.GetNextLine(&parameter_line)) {
 			std::stringstream parameterStream(parameter_line);
 			parameterStream >> a;
 			parameterStream >> b;
 			parameterStream >> maxR;
-			parameterStream >> sig;
+			parameterStream >> C;
 			parameterStream >> r;
 
 			// Create a new node parameter object
-			NodeParameters parameters(id, a, b, maxR, sig, r);
+			NodeParameters parameters(id, a, b, maxR, C, r);
 			nodeParameters.insert(std::pair<int, NodeParameters>(id, parameters));
 		}
 		else {

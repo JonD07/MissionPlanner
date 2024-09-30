@@ -4,7 +4,7 @@
 HLOptimizer::HLOptimizer() {}
 
 
-void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour, std::vector<std::tuple<double,double,double>>* cords, bool aprx_tx_curve) {
+bool HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour, std::vector<std::tuple<double,double,double>>* cords, bool aprx_tx_curve) {
 	int M_k = boost::numeric_cast<int>(sub_tour->size());
 	try {
 		//
@@ -16,7 +16,7 @@ void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 		GRBModel model = GRBModel(env);
 		if(aprx_tx_curve) {
 			model.set(GRB_IntParam_NonConvex, 2);
-			model.set(GRB_DoubleParam_TimeLimit, 20.0);
+			model.set(GRB_DoubleParam_TimeLimit, 500.0);
 		}
 
 		//
@@ -94,8 +94,8 @@ void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 		for(int j = 0; j < M_k; j++) {
 			int i = sub_tour->at(j);
 			// Get battery details
-			double a, b, mrate;
-			input->getTXParams_i(i, &a, &b, &mrate);
+			double a, b, mrate, c;
+			input->getTXParams_i(i, &a, &b, &mrate, &c);
 			// Sequence number for waypoint i
 			GRBVar r = model.addVar(0.0, mrate, 0.0, GRB_CONTINUOUS,  "r_" + itos(j));
 			R_j.push_back(r);
@@ -153,22 +153,22 @@ void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 			for(int j = 0; j < M_k; j++) {
 				// Get battery details for this node
 				int i = sub_tour->at(j);
-				double a, b, r_m;
-				input->getTXParams_i(i, &a, &b, &r_m);
+				double a, b, r_m, c;
+				input->getTXParams_i(i, &a, &b, &r_m, &c);
 
 				// Compute points (D, R) of R = a/(D)^2 + b for some step length
 				double intv = 2.0;
 				double xmax = 150.0;
-				int len = (int) ceil((xmax-sqrt(a/(r_m-b)))/intv) + 1;
+				int len = (int) ceil((xmax-sqrt(a/(r_m - b) - c))/intv) + 1;
 				double* xpts = new double[len];
 				double* upts = new double[len];
 				xpts[0] = 0.0;
 				upts[0] = r_m;
-				xpts[1] = sqrt(a/(r_m-b));
+				xpts[1] = sqrt(a/(r_m - b) - c);
 				upts[1] = r_m;
 				for(int i = 2; i < len; i++) {
-					xpts[i] = i*intv + sqrt(a/(r_m-b));
-					upts[i] = std::min(a/pow(i*intv, 2) + b, r_m);
+					xpts[i] = i*intv + xpts[1];
+					upts[i] = std::min(a/(pow(i*intv, 2) + c) + b, r_m);
 				}
 				model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), len, xpts, upts, "R_"+itos(j)+"_leq_math");
 			}
@@ -178,14 +178,14 @@ void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 			for(int j = 0; j < M_k; j++) {
 				// Get battery details for this node
 				int i = sub_tour->at(j);
-				double a, b, r_m;
-				input->getTXParams_i(i, &a, &b, &r_m);
+				double a, b, r_m, c;
+				input->getTXParams_i(i, &a, &b, &r_m, &c);
 
 				// Determine line equation to approximate TX rate curve
 				double y1 = r_m;
-				double x1 = sqrt(a/(y1-b));
+				double x1 = sqrt(a/(y1-b)-c);
 				double y2 = r_m/2.0;
-				double x2 = sqrt(a/(y2-b));
+				double x2 = sqrt(a/(y2-b)-c);
 				double m = (y2-y1)/(x2-x1);
 
 				model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
@@ -223,27 +223,32 @@ void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 		model.optimize();
 
 
-		//
-		/// Print Solution
-		//
-		if(DEBUG_HL_OPTMZR) {
-			printf("Obj: %f\n", model.get(GRB_DoubleAttr_ObjVal));
+		if(model.get(GRB_IntAttr_SolCount) >= 1) {
+			//
+			/// Print Solution
+			//
+			if(DEBUG_HL_OPTMZR) {
+				printf("Obj: %f\n", model.get(GRB_DoubleAttr_ObjVal));
 
-			// Each hovering location
-			printf("Hovering Order and Locations:\n");
+				// Each hovering location
+				printf("Hovering Order and Locations:\n");
+				for(int j = 0; j < M_k; j++) {
+					int i = sub_tour->at(j);
+					printf(" %d : (%.2f, %.2f, %.2f) - %.2fm -> (%.2f, %.2f, %.2f), %.2f @ %.2f Mb/s\n",
+							j, input->getX_i(i), input->getY_i(i), input->getZ_i(i), Dn_j.at(j).get(GRB_DoubleAttr_X),
+							X_j.at(j).get(GRB_DoubleAttr_X), Y_j.at(j).get(GRB_DoubleAttr_X), Z_j.at(j).get(GRB_DoubleAttr_X),
+							Ts_j.at(j).get(GRB_DoubleAttr_X), R_j.at(j).get(GRB_DoubleAttr_X));
+				}
+			}
+
+			// Save the solution into the cords array
 			for(int j = 0; j < M_k; j++) {
-				int i = sub_tour->at(j);
-				printf(" %d : (%.2f, %.2f, %.2f) - %.2fm -> (%.2f, %.2f, %.2f), %.2f @ %.2f Mb/s\n",
-						j, input->getX_i(i), input->getY_i(i), input->getZ_i(i), Dn_j.at(j).get(GRB_DoubleAttr_X),
-						X_j.at(j).get(GRB_DoubleAttr_X), Y_j.at(j).get(GRB_DoubleAttr_X), Z_j.at(j).get(GRB_DoubleAttr_X),
-						Ts_j.at(j).get(GRB_DoubleAttr_X), R_j.at(j).get(GRB_DoubleAttr_X));
+				std::tuple<double,double,double> drone_local(X_j.at(j).get(GRB_DoubleAttr_X), Y_j.at(j).get(GRB_DoubleAttr_X), Z_j.at(j).get(GRB_DoubleAttr_X));
+				cords->at(j) = drone_local;
 			}
 		}
-
-		// Save the solution into the cords array
-		for(int j = 0; j < M_k; j++) {
-			std::tuple<double,double,double> drone_local(X_j.at(j).get(GRB_DoubleAttr_X), Y_j.at(j).get(GRB_DoubleAttr_X), Z_j.at(j).get(GRB_DoubleAttr_X));
-			cords->at(j) = drone_local;
+		else {
+			return false;
 		}
 
 	} catch(GRBException e) {
@@ -253,4 +258,5 @@ void HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 		printf("Exception during optimization: %s\n", e.what());
 	}
 
+	return true;
 }

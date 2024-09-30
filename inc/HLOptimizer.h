@@ -23,7 +23,7 @@
 #include "Solver.h"
 #include "gurobi_c++.h"
 
-#define DEBUG_HL_OPTMZR		DEBUG || 1
+#define DEBUG_HL_OPTMZR		DEBUG || 0
 
 #define CONST_RELAXATION(X)		X,X+0.1
 
@@ -32,7 +32,8 @@ class HLOptimizer {
 public:
 	HLOptimizer();
 
-	void Optimize(int l, Input* input, const std::vector<int>* sub_tour, std::vector<std::tuple<double,double,double>>* cords, bool aprx_tx_curve = false);
+	// Finds optimized hovering locations. Returns false if no solution found (hit drone energy limit)
+	bool Optimize(int l, Input* input, const std::vector<int>* sub_tour, std::vector<std::tuple<double,double,double>>* cords, bool aprx_tx_curve = false);
 
 protected:
 private:

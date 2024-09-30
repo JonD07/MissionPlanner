@@ -21,7 +21,7 @@
 #include "Solver.h"
 #include "gurobi_c++.h"
 
-#define DEBUG_SLVR_OPT		DEBUG || 1
+#define DEBUG_SLVR_OPT		DEBUG || 0
 
 #define BIG_M		500000
 #define CONST_RELAXATION(X)		X,X+0.1

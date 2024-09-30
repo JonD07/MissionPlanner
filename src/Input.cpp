@@ -228,7 +228,7 @@ double Input::getRho_h(int l) {
 }
 
 
-// Get beta for drone l (planning energy budget, in Jule)
+// Get beta for drone l (planning energy budget, in Jules)
 double Input::getB_l(int l) {
 	if(l >= 0 && l < boost::numeric_cast<int>(vDroneLst.size())) {
 		return vDroneLst.at(l)->GetPlannableEnergy();
@@ -277,7 +277,7 @@ double Input::getZ_i(int i) {
 double Input::getZs_i(int i) {
 	// Range check..
 	if(i < 0 || i >= N) {
-		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		fprintf(stderr,"[ERROR:Input::getZ_i] Bad index : %d\n", i);
 		exit(1);
 	}
 
@@ -288,7 +288,7 @@ double Input::getZs_i(int i) {
 double Input::getQ_i(int i) {
 	// Range check..
 	if(i < 0 || i >= N) {
-		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		fprintf(stderr,"[ERROR:Input::getQ_i] Bad index : %d\n", i);
 		exit(1);
 	}
 
@@ -299,7 +299,7 @@ double Input::getQ_i(int i) {
 int Input::getNodeType_i(int i) {
 	// Range check..
 	if(i < 0 || i >= N) {
-		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		fprintf(stderr,"[ERROR:Input::getNodeType_i] Bad index : %d\n", i);
 		exit(1);
 	}
 
@@ -307,21 +307,21 @@ int Input::getNodeType_i(int i) {
 }
 
 // Get data TX parameters for node i
-void Input::getTXParams_i(int i, double* a, double* b, double* mrate) {
+void Input::getTXParams_i(int i, double* a, double* b, double* max_rate, double* C) {
 	// Range check..
 	if(i < 0 || i >= N) {
-		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		fprintf(stderr,"[ERROR:Input::getTXParams_i] Bad index : %d\n", i);
 		exit(1);
 	}
 
-	vNodeLst.at(i)->getTXParams(a, b, mrate);
+	vNodeLst.at(i)->getTXParams(a, b, max_rate, C);
 }
 
 // Get the "agnostic" max TX range for node i
 double Input::getR_i(int i) {
 	// Range check..
 	if(i < 0 || i >= N) {
-		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		fprintf(stderr,"[ERROR:Input::getR_i] Bad index : %d\n", i);
 		exit(1);
 	}
 

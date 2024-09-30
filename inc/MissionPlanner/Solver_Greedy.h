@@ -23,7 +23,7 @@
 #include "Solver.h"
 #include "HLOptimizer.h"
 
-#define DEBUG_SLVR_GRDY		DEBUG || 1
+#define DEBUG_SLVR_GRDY		DEBUG || 0
 
 
 class Solver_Greedy : public Solver {

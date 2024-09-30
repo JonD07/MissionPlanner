@@ -22,6 +22,28 @@
 
 #define DEBUG_SOLVER	0 || DEBUG
 
+struct max_float {
+	double val;	// The value used for ordering in queue
+	int ID;		// ID of this float
+
+	max_float(double d, int id) : val(d), ID(id) {}
+	max_float(const max_float& other) {
+		val = other.val;
+		ID = other.ID;
+	}
+	max_float& operator=(const max_float& other) {
+		val = other.val;
+		ID = other.ID;
+
+	    return *this;
+	}
+
+	// Overload the operator < to ensure the priority queue orders by val
+	bool operator<(const max_float& other) const {
+		return val < other.val;
+	}
+};
+
 class Solver {
 public:
 	Solver();

@@ -17,6 +17,7 @@
 #include <cstring>
 
 #include "Input.h"
+#include "Utilities.h"
 
 #define DEBUG_SOL	DEBUG || 0
 
@@ -62,10 +63,16 @@ public:
 	 * Determines the probability reward gained for the stored solution
 	 */
 	double Benchmark();
-	// Determines if this is a valid assignment solution (doesn't break constraints)
+	/*
+	 * Determines if this is a valid assignment solution (doesn't break constraints).
+	 * We do this by checking to see if each node is visited and checking the total
+	 * energy used by each drone on each sub-tour.
+	 */
 	bool ValidSolution();
 	// Place a hovering location into sub-tour k of drone l
 	void AddHL(const HoveringLocation& hl, int l = 0, int k = 0);
+	// Clears the current solution
+	void ClearSolution();
 
 private:
 	Input* m_input;

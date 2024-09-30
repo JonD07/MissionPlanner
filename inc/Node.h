@@ -18,22 +18,23 @@
 
 struct NodeParameters {
 	int type_id;
-	double A, B, maxRate, sigma, R;
+	// TX is determined by the equation: min(a/(x^2+c)+b
+	double A, B, maxRate, C, R;
 
 	NodeParameters() {
 		type_id = -1;
 		A = 0;
 		B = 0;
 		maxRate = 0;
-		sigma = 0;
+		C = 0;
 		R = 0;
 	}
-	NodeParameters(int id, double a, double b, double maxR, double sig, double r) {
+	NodeParameters(int id, double a, double b, double maxR, double minR, double r) {
 		type_id = id;
 		A = a;
 		B = b;
 		maxRate = maxR;
-		sigma = sig;
+		C = minR;
 		R = r;
 	}
 	NodeParameters(const NodeParameters& other) {
@@ -41,7 +42,7 @@ struct NodeParameters {
 		A = other.A;
 		B = other.B;
 		maxRate = other.maxRate;
-		sigma = other.sigma;
+		C = other.C;
 		R = other.R;
 	}
 	NodeParameters& operator=(const NodeParameters& other) {
@@ -49,7 +50,7 @@ struct NodeParameters {
 		A = other.A;
 		B = other.B;
 		maxRate = other.maxRate;
-		sigma = other.sigma;
+		C = other.C;
 		R = other.R;
 
 	    return *this;
@@ -76,14 +77,14 @@ public:
 	double getZ() { return fZ; }
 	// Get this node's safe altitude
 	double getZs() { return fZSafe; }
-	// Get this node's data quantity to collect
+	// Get this node's data quantity to collect (in Mb)
 	double getQ() { return fQ; }
 	// Get this node's type
 	int getType() { return nNodeType; }
 	// Get this node's type
 	std::string getIP() { return sIP; }
 	// Get data TX parameters
-	void getTXParams(double* a, double* b, double* mrate);
+	void getTXParams(double* a, double* b, double* max_rate, double* C);
 	// Get the "agnostic" max TX range
 	double getR();
 
@@ -100,7 +101,7 @@ private:
 	double fX, fY, fZ;
 	// Safe hover distance
 	double fZSafe;
-	// Quantity of data to collect
+	// Mbs of data to collect
 	double fQ;
 	// Node type (used for determining communication parameters)
 	int nNodeType;

@@ -13,7 +13,7 @@
 #define DEBUG_MAIN	DEBUG || 0
 
 #define PRINT_PLAN			true
-#define PRINT_PERFORMANCE	true
+#define PRINT_PERFORMANCE	false
 
 #define DATA_LOG_FORMAT	"alg_%d.dat"
 
@@ -23,8 +23,6 @@ enum {
 
 
 int main(int argc, char *argv[]) {
-	srand(time(NULL));
-
 	// Run parameters
 	bool print_plan = PRINT_PLAN;
 	int algorithm = e_Algo_STANDARD;

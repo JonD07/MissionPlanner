@@ -44,19 +44,24 @@ include_directories(
 
 add_executable(mission-planner
 	src/MissionPlanner/main.cpp
+	src/ClusteringAlgorithm.cpp
 	src/Drone.cpp
 	src/DroneGenerator.cpp
 	src/FileReader.cpp
 	src/HLOptimizer.cpp
 	src/Input.cpp
+	src/LKH_TSP_Solver.cpp
 	src/Node.cpp
 	src/NodeGenerator.cpp
 	src/Solution.cpp
 	src/Solver.cpp
+	src/TighteningHeuristic.cpp
 	src/Utilities.cpp
 	src/MissionPlanner/Offline_Input.cpp
+	src/MissionPlanner/Solver_Baseline.cpp
 	src/MissionPlanner/Solver_Greedy.cpp
 	src/MissionPlanner/Solver_Opt.cpp
+	src/MissionPlanner/Solver_VRP.cpp
 )
 
 add_executable(local-planner

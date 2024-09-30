@@ -15,3 +15,5 @@
 #define EPSILON			0.000001
 #define INF				1000000000000
 #define PI				3.14159265
+
+#define START_AGL		10.0

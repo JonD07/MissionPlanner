@@ -24,7 +24,7 @@
 #include "DroneGenerator.h"
 
 
-#define DEBUG_INPUT	DEBUG || 1
+#define DEBUG_INPUT	DEBUG || 0
 
 struct BaseStation {
 	double fX, fY, fZ;
@@ -58,7 +58,7 @@ public:
 	double getRho_m(int l);
 	// Get rho for moving for drone l
 	double getRho_h(int l);
-	// Get beta for drone l (planning energy budget, in Jule)
+	// Get beta for drone l (planning energy budget, in Jules)
 	double getB_l(int l);
 	// Get the x-coordinate of node i
 	double getX_i(int i);
@@ -73,15 +73,17 @@ public:
 	// Get i's node type
 	int getNodeType_i(int i);
 	// Get data TX parameters for node i
-	void getTXParams_i(int i, double* a, double* b, double* mrate);
+	void getTXParams_i(int i, double* a, double* b, double* max_rate, double* C);
 	// Get the "agnostic" max TX range for node i
 	double getR_i(int i);
 	// Get the x-coordinate of the base station
 	double getX_b() { return mBaseStation.fX; }
 	// Get the y-coordinate of the base station
 	double getY_b() { return mBaseStation.fY; }
-	// Get the z-coordinate of the base station
-	double getZ_b() { return mBaseStation.fZ; }
+	// Get the z-coordinate of the base station (this is the starting altitude - start AGL + ground-z)
+	double getZ_b() { return mBaseStation.fZ + START_AGL; }
+	// Get the z-coordinate of the base station (this is the ground-z)
+	double getZ_bg() { return mBaseStation.fZ; }
 	// Get a pointer to node i
 	Node* getNode_i(int i);
 

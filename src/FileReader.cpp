@@ -23,7 +23,7 @@ bool FileReader::GetNextLine(std::string* line) {
 		if(std::getline(oFile, *line)) {
 			if(DEBUG_FILE_READ) {
 				printf("Next line: \"%s\"\n", (*line).c_str());
-				printf("First char: \'%d\'\n", (*line)[0]);
+//				printf("First char: \'%d\'\n", (*line)[0]);
 			}
 			// Successfully read next line, verify it doesn't start with '#'
 			if((*line)[0] != '#') {
