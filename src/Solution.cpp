@@ -88,7 +88,7 @@ void Solution::PrintPlan(bool from_launch) {
 }
 
 /*
- * TODO: Determines the probability reward gained for the stored solution
+ *
  */
 double Solution::Benchmark() {
 	double total_time = 0;
@@ -118,6 +118,11 @@ double Solution::Benchmark() {
 					Node* node_i = m_input->getNode_i(hl.nodeServiced);
 					total_time += node_i->collectionTime(hl.fX, hl.fY, hl.fZ);
 				}
+
+				// Distance back to the base station
+				double dist_prv_nxt = distAtoB(x_prev, y_prev, z_prev, m_input->getX_b(), m_input->getY_b(), m_input->getZ_b());
+				// Time to travel back to bs
+				total_time += dist_prv_nxt/m_input->getV_l(l);
 			}
 		}
 	}

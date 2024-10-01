@@ -29,12 +29,12 @@ struct NodeParameters {
 		C = 0;
 		R = 0;
 	}
-	NodeParameters(int id, double a, double b, double maxR, double minR, double r) {
+	NodeParameters(int id, double a, double b, double maxR, double c, double r) {
 		type_id = id;
 		A = a;
 		B = b;
 		maxRate = maxR;
-		C = minR;
+		C = c;
 		R = r;
 	}
 	NodeParameters(const NodeParameters& other) {

@@ -11,10 +11,6 @@ Solver_Greedy::Solver_Greedy(bool pwlApprx) {
 void Solver_Greedy::Solve(Input* input, Solution* I_crnt) {
 	// Tracks what nodes are already visited
 	std::vector<bool> nodes_visited;
-	for(int i = 0; i < input->getN(); i++) {
-		// Fill with false
-		nodes_visited.push_back(false);
-	}
 
 	// Number of sub-tours per drone
 	int k = 1;
@@ -23,6 +19,11 @@ void Solver_Greedy::Solve(Input* input, Solution* I_crnt) {
 	while(increase_k) {
 		increase_k = false;
 		I_crnt->ClearSolution();
+		for(int i = 0; i < input->getN(); i++) {
+			// Fill with false
+			nodes_visited.push_back(false);
+		}
+
 		// Number of drones (some are "fake" on future tours)
 		int M_prime = input->getM()*k;
 

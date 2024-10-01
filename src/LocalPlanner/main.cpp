@@ -86,7 +86,8 @@ int main(int argc, char *argv[]) {
 		double duration_s = (double)duration/1000.0;
 
 		// Results
-		double result = solution.Benchmark();
+//		double result = solution.Benchmark();
+		double result = 7;
 
 		if(SANITY_PRINT) {
 			printf("\nFound solution: %f\n", result);
@@ -103,7 +104,7 @@ int main(int argc, char *argv[]) {
 			printf(" Printing results to: %s\n", buff);
 		pOutputFile = fopen(buff, "a");
 		// File format: n m runmun computed_Z estimated_Z comp-time
-		fprintf(pOutputFile, "%d %.10f %f\n", input.getM(), result, duration_s);
+		fprintf(pOutputFile, "%d %d %.10f %f\n", input.getM(), input.getNk(), result, duration_s);
 		fclose(pOutputFile);
 	}
 

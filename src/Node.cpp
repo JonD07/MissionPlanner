@@ -58,6 +58,6 @@ double Node::getR() {
 // Predicted time required to collect data from this node from location x,y,z
 double Node::collectionTime(double x, double y, double z) {
 	double dist = sqrt(pow(fX-x, 2) + pow(fY-y, 2) + pow(fZ-z, 2));
-	double rate = std::max(oNodeParameters.maxRate, oNodeParameters.A/(dist*dist) + oNodeParameters.B);
+	double rate = std::min(oNodeParameters.maxRate, oNodeParameters.A/(dist*dist+oNodeParameters.C) + oNodeParameters.B);
 	return fQ/rate;
 }

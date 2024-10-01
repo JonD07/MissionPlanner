@@ -14,8 +14,8 @@ bool HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 		env.set("LogFile", "mip1.log");
 		env.start();
 		GRBModel model = GRBModel(env);
+		model.set(GRB_IntParam_NonConvex, 2);
 		if(aprx_tx_curve) {
-			model.set(GRB_IntParam_NonConvex, 2);
 			model.set(GRB_DoubleParam_TimeLimit, 500.0);
 		}
 
@@ -187,6 +187,9 @@ bool HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 				double y2 = r_m/2.0;
 				double x2 = sqrt(a/(y2-b)-c);
 				double m = (y2-y1)/(x2-x1);
+
+				if(DEBUG_HL_OPTMZR)
+					printf(" %d : a=%.2f, b=%.2f, r_m=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n",i,a, b, r_m, c,m,x1,y1);
 
 				model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
 			}
