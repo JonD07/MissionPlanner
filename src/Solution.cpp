@@ -131,6 +131,51 @@ double Solution::Benchmark() {
 }
 
 /*
+ * Fills sub_tours with the time to complete each sub-tour and gives a string for each sub-tour,
+ * in the form l:k, where l is the drone and k is the sub-tour number for that drone.
+ */
+void Solution::GetSubTourTimes(std::vector<std::pair<std::string,double>>* sub_tours) {
+	// Cycle through drones
+	for(int l = 0; l < m_input->getM(); l++) {
+		// Cycle through sub-tours for drone l
+		for(int k = 0; k < m_input->getN(); k++) {
+			// Does sub-tour k contain stops?
+			if(tours_lkj.at(l).at(k).size() > 0) {
+				double total_time = 0;
+				// Is this a relaunch?
+				if(k > 0) {
+					// Yes, add in battery swap time
+					total_time += m_input->getTb_l(l);
+				}
+				// Track the time it takes to run this tour
+				double x_prev = m_input->getX_b(), y_prev = m_input->getY_b(), z_prev = m_input->getZ_b();
+
+				// For each stop on this tour
+				for(HoveringLocation hl : tours_lkj.at(l).at(k)) {
+					// Determine the distance from point to point
+					double dist_prv_nxt = distAtoB(x_prev, y_prev, z_prev, hl.fX, hl.fY, hl.fZ);
+					// Time to travel this distance
+					total_time += dist_prv_nxt/m_input->getV_l(l);
+
+					// Determine node service time..
+					Node* node_i = m_input->getNode_i(hl.nodeServiced);
+					total_time += node_i->collectionTime(hl.fX, hl.fY, hl.fZ);
+				}
+
+				// Distance back to the base station
+				double dist_prv_nxt = distAtoB(x_prev, y_prev, z_prev, m_input->getX_b(), m_input->getY_b(), m_input->getZ_b());
+				// Time to travel back to bs
+				total_time += dist_prv_nxt/m_input->getV_l(l);
+
+				std::pair<std::string,double> tour(itos(l)+":"+itos(k), total_time);
+
+				sub_tours->push_back(tour);
+			}
+		}
+	}
+}
+
+/*
  * Determines if this is a valid assignment solution (doesn't break constraints).
  * We do this by checking to see if each node is visited and checking the total
  * energy used by each drone on each sub-tour.

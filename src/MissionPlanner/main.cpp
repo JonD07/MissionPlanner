@@ -19,6 +19,7 @@
 #define REC_COMP_Z		0
 #define ESTIMATE_Z		1
 #define PRINT_RESULTS	0
+#define PRINT_SUBTOURS	1
 #define DATA_LOG_FORMAT	"alg_%d.dat"
 #define DATA_LOG_DEFLT_PATH	""
 #define NODE_DATA_PATH	"../data/node_data.dat"
@@ -156,7 +157,20 @@ int main(int argc, char *argv[]) {
 		pOutputFile = fopen(buff, "a");
 		// File format: n m runmun computed_Z estimated_Z comp-time
 		fprintf(pOutputFile, "%d %d %d ", input.getN(), input.getM(), run_number);
-		fprintf(pOutputFile, "%.10f %f\n", result, duration_s);
+		fprintf(pOutputFile, "%.10f %f", result, duration_s);
+
+		if(PRINT_SUBTOURS) {
+			// Grab sub-tour times
+			std::vector<std::pair<std::string,double>> sub_tours;
+			solution.GetSubTourTimes(&sub_tours);
+
+			// Print these too
+			for(std::pair<std::string,double> p : sub_tours) {
+				fprintf(pOutputFile, "%s %f ", p.first.c_str(), p.second);
+			}
+		}
+		fprintf(pOutputFile, "\n");
+
 		fclose(pOutputFile);
 	}
 

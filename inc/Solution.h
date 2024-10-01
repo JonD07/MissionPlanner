@@ -15,6 +15,7 @@
 #include <cmath>
 #include <complex>
 #include <cstring>
+#include <utility>
 
 #include "Input.h"
 #include "Utilities.h"
@@ -63,6 +64,11 @@ public:
 	 * Determines the probability reward gained for the stored solution
 	 */
 	double Benchmark();
+	/*
+	 * Fills sub_tours with the time to complete each sub-tour and gives a string for each sub-tour,
+	 * in the form l:k, where l is the drone and k is the sub-tour number for that drone.
+	 */
+	void GetSubTourTimes(std::vector<std::pair<std::string,double>>* sub_tours);
 	/*
 	 * Determines if this is a valid assignment solution (doesn't break constraints).
 	 * We do this by checking to see if each node is visited and checking the total

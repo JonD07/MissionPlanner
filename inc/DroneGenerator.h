@@ -30,7 +30,7 @@ public:
 
 	// Takes in a node string and returns a node. The string is expected to be in this format:
 	//  x_1 y_1 z_1 zs_1 q_1 t_1
-	Drone* GenerateDrone(int type, double usable_speed = -1, double usable_bat = -1);
+	Drone* GenerateDrone(int type, double usable_speed = -1, double bat_share = -1);
 private:
 	// List of node parameters
 	std::map<int, DroneType> droneTypes;

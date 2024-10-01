@@ -120,7 +120,7 @@ DroneGenerator::~DroneGenerator() {}
 
 // Takes in a node string and returns a node. The string is expected to be in this format:
 //  x_1 y_1 z_1 zs_1 q_1 t_1
-Drone* DroneGenerator::GenerateDrone(int type_ID, double usable_speed, double usable_bat) {
+Drone* DroneGenerator::GenerateDrone(int type_ID, double usable_speed, double bat_share) {
 	if(droneTypes.size() == 0) {
 		// Asked for a drone but we do not know of any drone types...
 		fprintf(stderr, "[DroneGenerator::GenerateDrone] : No drone data!\n");
@@ -131,11 +131,11 @@ Drone* DroneGenerator::GenerateDrone(int type_ID, double usable_speed, double us
 	if(usable_speed > 0) {
 		// Use said data...
 		if(droneTypes.count(type_ID) > 0) {
-			return new Drone(usable_speed, usable_bat, droneTypes.at(type_ID));
+			return new Drone(usable_speed, bat_share, droneTypes.at(type_ID));
 		}
 		else {
 			// Bad type, just assume it is type 0
-			return new Drone(usable_speed, usable_bat, droneTypes.at(0));
+			return new Drone(usable_speed, bat_share, droneTypes.at(0));
 		}
 	}
 	else {

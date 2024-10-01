@@ -49,7 +49,7 @@ struct DroneType {
 class Drone {
 public:
 //	Drone();
-	Drone(double set_speed, double usable_bat, const DroneType &type);
+	Drone(double set_speed, double bat_share, const DroneType &type);
 	Drone(const Drone &n);
 	~Drone();
 
