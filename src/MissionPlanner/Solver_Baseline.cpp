@@ -197,6 +197,7 @@ void Solver_Baseline::Solve(Input* input, Solution* I_crnt) {
 		/// Run hovering location optimizer
 		// For each drone
 		for(int l = 0; l < input->getM() && !increase_k; l++) {
+			int drones_k = 0;
 			// For each sub-tour that this drone does
 			for(int k : assignment_lk.at(l)) {
 				// Just to not crash anything... Are there actually points here..?
@@ -231,13 +232,14 @@ void Solver_Baseline::Solve(Input* input, Solution* I_crnt) {
 						for(int i = 1; i < boost::numeric_cast<int>(sub_tour.size())-1; i++) {
 							printf("Adding point %d(%.2f, %.2f, %.2f)\n", sub_tour.at(i).node_id, sub_tour.at(i).x, sub_tour.at(i).y, sub_tour.at(i).z);
 							HoveringLocation hl(sub_tour.at(i).x, sub_tour.at(i).y, sub_tour.at(i).z, sub_tour.at(i).node_id);
-							I_crnt->AddHL(hl,l,k);
+							I_crnt->AddHL(hl,l,drones_k);
 						}
 					}
 					else {
 						increase_k = true;
 					}
 				}
+				drones_k++;
 			}
 		}
 

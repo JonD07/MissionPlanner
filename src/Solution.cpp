@@ -176,16 +176,119 @@ void Solution::GetSubTourTimes(std::vector<std::pair<std::string,double>>* sub_t
 }
 
 /*
+ * Fills the sub_tours array with strings for each sub-tour. The string will be the following format:
+ * l:k:i-i-i...-i, where l is the drone's id, k is the drones sub-tour number, and i- ... -i are the
+ * stops on that tour.
+ */
+void Solution::GetSubTours(std::vector<std::string>* sub_tours) {
+	// Cycle through drones
+	for(int l = 0; l < m_input->getM(); l++) {
+		// Cycle through sub-tours for drone l
+		for(int k = 0; k < m_input->getN(); k++) {
+			// Does sub-tour k contain stops?
+			if(tours_lkj.at(l).at(k).size() > 0) {
+				// Create a string for this sub-tour
+				std::string tour_string = itos(l)+":"+itos(k)+":";
+
+				// For each stop on this tour
+				for(HoveringLocation hl : tours_lkj.at(l).at(k)) {
+					tour_string += itos(hl.nodeServiced)+"-";
+				}
+
+				// Add string to array
+				sub_tours->push_back(tour_string);
+			}
+		}
+	}
+}
+
+/*
  * Determines if this is a valid assignment solution (doesn't break constraints).
  * We do this by checking to see if each node is visited and checking the total
  * energy used by each drone on each sub-tour.
  */
 bool Solution::ValidSolution() {
-	bool valid = true;
+	bool valid_solution = true;
 
-	// TODO: This!!
+	// Verify that each sub-tour is visited at least once
+	std::vector<bool> visited;
+	for(int i = 0; i < m_input->getN(); i++) {
+		visited.push_back(false);
+	}
 
-	return valid;
+	// Cycle through all tours (start with drones)
+	for(int l = 0; l < m_input->getM(); l++) {
+		// Cycle through sub-tours for drone l
+		for(int k = 0; k < m_input->getN(); k++) {
+			// Does sub-tour k contain stops?
+			if(tours_lkj.at(l).at(k).size() > 0) {
+				// Check that we don't go over energy here
+				double tour_energy = CalculateEnergy(l, tours_lkj.at(l).at(k));
+				if(tour_energy > m_input->getB_l(l)) {
+					// We went over...
+					valid_solution = false;
+					fprintf(stderr,"[ERROR:ValidSolution] Sub-tour %d:%d is over energy budget! %.3f > %.3f\n", l, k, tour_energy, m_input->getB_l(l));
+				}
+
+				// Check each stop on this sub-tour
+				for(HoveringLocation hl : tours_lkj.at(l).at(k)) {
+					if(hl.nodeServiced >= 0 && hl.nodeServiced < m_input->getN()) {
+						visited.at(hl.nodeServiced) = true;
+					}
+				}
+			}
+		}
+	}
+
+	// Did we hit every node?
+	for(int i = 0; i < m_input->getN(); i++) {
+		if(!visited.at(i)) {
+			valid_solution = false;
+			fprintf(stderr,"[ERROR:ValidSolution] Missed node %d\n", i);
+		}
+	}
+
+	return valid_solution;
+}
+
+/*
+ * Determines how much energy drone l will use if it completes the given tour
+ */
+double Solution::CalculateEnergy(int l, const std::vector<HoveringLocation>& tour) {
+	double total_energy = 0;
+	const double drone_speed = m_input->getV_l(l);
+
+	// Set current position (assume that we start at the base station)
+	double x = m_input->getX_b(), y = m_input->getY_b(), z = m_input->getZ_b();
+	// Cycle through stops in tour
+	for(HoveringLocation hl : tour) {
+		// Get distance from our current position to the next hl
+		double dist_a_b = distAtoB(x, y, z, hl.fX, hl.fY, hl.fZ);
+		// Calculate time
+		double time_a_b = dist_a_b/drone_speed;
+		// Add in energy
+		total_energy += m_input->getRho_m(l)*time_a_b;
+
+		// Update position
+		x = hl.fX;
+		y = hl.fY;
+		z = hl.fZ;
+
+		// Determine time spent hovering
+		double service_time = m_input->getNode_i(hl.nodeServiced)->collectionTime(x,y,z);
+		// Add in energy
+		total_energy += m_input->getRho_h(l)*service_time;
+	}
+	// Add in energy to get back to the base station
+	{
+		double dist_i_base = distAtoB(x, y, z, m_input->getX_b(), m_input->getY_b(), m_input->getZ_b());
+		// Calculate time
+		double time_i_base = dist_i_base/drone_speed;
+		// Add in energy
+		total_energy += m_input->getRho_m(l)*time_i_base;
+	}
+
+	return total_energy;
 }
 
 // Place a hovering location into sub-tour k of drone l

@@ -23,7 +23,7 @@
 #include "LKH_TSP_Solver.h"
 
 
-#define DEBUG_SLVR_VRP		DEBUG || 0
+#define DEBUG_SLVR_VRP		DEBUG || 1
 
 
 class Solver_VRP : public Solver {

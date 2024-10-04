@@ -157,9 +157,12 @@ int main(int argc, char *argv[]) {
 		pOutputFile = fopen(buff, "a");
 		// File format: n m runmun computed_Z estimated_Z comp-time
 		fprintf(pOutputFile, "%d %d %d ", input.getN(), input.getM(), run_number);
-		fprintf(pOutputFile, "%.10f %f", result, duration_s);
+		fprintf(pOutputFile, "%.10f %f ", result, duration_s);
 
 		if(PRINT_SUBTOURS) {
+			fprintf(pOutputFile, "%f ", input.getQ_i(0));
+			// Print if this is a valid solution
+			fprintf(pOutputFile, "%d ", solution.ValidSolution());
 			// Grab sub-tour times
 			std::vector<std::pair<std::string,double>> sub_tours;
 			solution.GetSubTourTimes(&sub_tours);
@@ -168,6 +171,14 @@ int main(int argc, char *argv[]) {
 			for(std::pair<std::string,double> p : sub_tours) {
 				fprintf(pOutputFile, "%s %f ", p.first.c_str(), p.second);
 			}
+
+			// Print out what the tours are
+			std::vector<std::string> sub_tour_string;
+			solution.GetSubTours(&sub_tour_string);
+			for(std::string s : sub_tour_string) {
+				fprintf(pOutputFile, "%s ", s.c_str());
+			}
+
 		}
 		fprintf(pOutputFile, "\n");
 

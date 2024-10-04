@@ -13,12 +13,15 @@ void Solver_Greedy::Solve(Input* input, Solution* I_crnt) {
 	std::vector<bool> nodes_visited;
 
 	// Number of sub-tours per drone
-	int k = 1;
+	int k = 0;
 
 	bool increase_k = true;
 	while(increase_k) {
+		// Increase k
+		k++;
 		increase_k = false;
 		I_crnt->ClearSolution();
+		nodes_visited.clear();
 		for(int i = 0; i < input->getN(); i++) {
 			// Fill with false
 			nodes_visited.push_back(false);
@@ -96,7 +99,7 @@ void Solver_Greedy::Solve(Input* input, Solution* I_crnt) {
 		/// Run hovering location optimizer
 		HLOptimizer hlOptimizer;
 		for(int l = 0; l < M_prime && !increase_k; l++) {
-			if(sub_tours_l.at(l).size() > 1) {
+			if(sub_tours_l.at(l).size() > 0) {
 				// Create a coordinates array
 				std::vector<std::tuple<double,double,double>> coords;
 				for(int i = 0; i < boost::numeric_cast<int>(sub_tours_l.at(l).size()); i++) {

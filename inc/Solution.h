@@ -70,11 +70,21 @@ public:
 	 */
 	void GetSubTourTimes(std::vector<std::pair<std::string,double>>* sub_tours);
 	/*
+	 * Fills the sub_tours array with strings for each sub-tour. The string will be the following format:
+	 * l:k:i-i-i...-i, where l is the drone's id, k is the drones sub-tour number, and i- ... -i are the
+	 * stops on that tour.
+	 */
+	void GetSubTours(std::vector<std::string>* sub_tours);
+	/*
 	 * Determines if this is a valid assignment solution (doesn't break constraints).
 	 * We do this by checking to see if each node is visited and checking the total
 	 * energy used by each drone on each sub-tour.
 	 */
 	bool ValidSolution();
+	/*
+	 * Determines how much energy drone l will use if it completes the given tour
+	 */
+	double CalculateEnergy(int l, const std::vector<HoveringLocation>& tour);
 	// Place a hovering location into sub-tour k of drone l
 	void AddHL(const HoveringLocation& hl, int l = 0, int k = 0);
 	// Clears the current solution

@@ -197,6 +197,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 		/// Run hovering location optimizer
 		// For each drone
 		for(int l = 0; l < input->getM() && !increase_k; l++) {
+			int drones_k = 0;
 			// For each sub-tour that this drone does
 			for(int k : assignment_lk.at(l)) {
 				std::vector<int> sub_tour;
@@ -214,15 +215,25 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 				bool valid_solution = hlOptimizer.Optimize(l, input, &sub_tour, &coords, false);
 
 				if(valid_solution) {
+
+					if(DEBUG_SLVR_VRP) {
+						printf("Good sub-tour %d:%d\n Adding hoving points:\n", l, drones_k);
+					}
+
 					// Store the found solution
 					for(int i = 0; i < boost::numeric_cast<int>(ordered_subtours.at(k).size()); i++) {
 						HoveringLocation hl(std::get<0>(coords.at(i)), std::get<1>(coords.at(i)), std::get<2>(coords.at(i)), ordered_subtours.at(k).at(i));
-						I_crnt->AddHL(hl,l,k);
+						I_crnt->AddHL(hl,l,drones_k);
+
+						if(DEBUG_SLVR_VRP) {
+							printf("  (%.3f, %.3f, %.3f) for node %d (%.3f, %.3f, %.3f)\n", hl.fX, hl.fY, hl.fZ, hl.nodeServiced, input->getX_i(hl.nodeServiced), input->getY_i(hl.nodeServiced), input->getZ_i(hl.nodeServiced));
+						}
 					}
 				}
 				else {
 					increase_k = true;
 				}
+				drones_k++;
 			}
 		}
 

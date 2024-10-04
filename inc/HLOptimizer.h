@@ -23,7 +23,7 @@
 #include "Solver.h"
 #include "gurobi_c++.h"
 
-#define DEBUG_HL_OPTMZR		DEBUG || 0
+#define DEBUG_HL_OPTMZR		DEBUG || 1
 
 #define CONST_RELAXATION(X)		X,X+0.1
 
