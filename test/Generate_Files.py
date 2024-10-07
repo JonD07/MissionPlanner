@@ -10,8 +10,8 @@ FW_TEST = True
 Z_MIN = -10
 Z_MAX = 50
 # Data range
-Q_MIN = 0.5
-Q_MAX = 500.0
+Q_MIN = 0.125
+Q_MAX = 64.0
 
 # Parameters
 NUM_PLOTS = 50
@@ -20,8 +20,8 @@ NUM_PLOTS = 50
 START_COUNT = 5
 END_COUNT = 200
 Node_Increment = 5
-# 25 per km^2
-ALPHA = 0.000025
+# 75 per km^2
+ALPHA = 0.000075
 
 # Increasing alpha
 NUM_NODES = 50
@@ -30,7 +30,7 @@ END_DENSE = 151
 DENSE_INC = 5
 
 # Increasing Q
-START_Q = 0.5
+START_Q = 0.0625
 END_Q = 1024
 Q_INC_FACTOR = 2
 
@@ -161,7 +161,7 @@ if FW_TEST:
 					x = MAX_COORD * random.random() - MAX_COORD/2
 					y = MAX_COORD * random.random() - MAX_COORD/2
 					z = 30 * random.random()
-					z_s = random.choice([5.0, 10, 15])
+					z_s = random.choice([8.0, 10, 15])
 					q = (10.0 - 0.5) * random.random() + 0.5
 					# Write the results to file
 					file.write(f"{x} {y} {z} {z_s} {q} "+get_rnd_node()+"\n")
