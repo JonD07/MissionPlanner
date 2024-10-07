@@ -1,0 +1,4 @@
+# Location of node data file
+../data/node_data.dat
+# Location of drone data file
+../data/drone_data.dat
