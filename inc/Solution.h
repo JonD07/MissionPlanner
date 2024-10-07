@@ -16,6 +16,7 @@
 #include <complex>
 #include <cstring>
 #include <utility>
+#include <limits>
 
 #include "Input.h"
 #include "Utilities.h"

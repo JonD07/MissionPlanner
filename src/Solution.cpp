@@ -88,46 +88,51 @@ void Solution::PrintPlan(bool from_launch) {
 }
 
 /*
- *
+ * Calculates the objective function values for the stored solution. Will return INF if this is not a valid solution.
  */
 double Solution::Benchmark() {
-	double total_time = 0;
+	if(ValidSolution()) {
+		double total_time = 0;
 
-	// Cycle through drones
-	for(int l = 0; l < m_input->getM(); l++) {
-		// Cycle through sub-tours for drone l
-		for(int k = 0; k < m_input->getN(); k++) {
-			// Does sub-tour k contain stops?
-			if(tours_lkj.at(l).at(k).size() > 0) {
-				// Is this a relaunch?
-				if(k > 0) {
-					// Yes, add in battery swap time
-					total_time += m_input->getTb_l(l);
-				}
-				// Track the time it takes to run this tour
-				double x_prev = m_input->getX_b(), y_prev = m_input->getY_b(), z_prev = m_input->getZ_b();
+		// Cycle through drones
+		for(int l = 0; l < m_input->getM(); l++) {
+			// Cycle through sub-tours for drone l
+			for(int k = 0; k < m_input->getN(); k++) {
+				// Does sub-tour k contain stops?
+				if(tours_lkj.at(l).at(k).size() > 0) {
+					// Is this a relaunch?
+					if(k > 0) {
+						// Yes, add in battery swap time
+						total_time += m_input->getTb_l(l);
+					}
+					// Track the time it takes to run this tour
+					double x_prev = m_input->getX_b(), y_prev = m_input->getY_b(), z_prev = m_input->getZ_b();
 
-				// For each stop on this tour
-				for(HoveringLocation hl : tours_lkj.at(l).at(k)) {
-					// Determine the distance from point to point
-					double dist_prv_nxt = distAtoB(x_prev, y_prev, z_prev, hl.fX, hl.fY, hl.fZ);
-					// Time to travel this distance
+					// For each stop on this tour
+					for(HoveringLocation hl : tours_lkj.at(l).at(k)) {
+						// Determine the distance from point to point
+						double dist_prv_nxt = distAtoB(x_prev, y_prev, z_prev, hl.fX, hl.fY, hl.fZ);
+						// Time to travel this distance
+						total_time += dist_prv_nxt/m_input->getV_l(l);
+
+						// Determine node service time..
+						Node* node_i = m_input->getNode_i(hl.nodeServiced);
+						total_time += node_i->collectionTime(hl.fX, hl.fY, hl.fZ);
+					}
+
+					// Distance back to the base station
+					double dist_prv_nxt = distAtoB(x_prev, y_prev, z_prev, m_input->getX_b(), m_input->getY_b(), m_input->getZ_b());
+					// Time to travel back to bs
 					total_time += dist_prv_nxt/m_input->getV_l(l);
-
-					// Determine node service time..
-					Node* node_i = m_input->getNode_i(hl.nodeServiced);
-					total_time += node_i->collectionTime(hl.fX, hl.fY, hl.fZ);
 				}
-
-				// Distance back to the base station
-				double dist_prv_nxt = distAtoB(x_prev, y_prev, z_prev, m_input->getX_b(), m_input->getY_b(), m_input->getZ_b());
-				// Time to travel back to bs
-				total_time += dist_prv_nxt/m_input->getV_l(l);
 			}
 		}
-	}
 
-	return total_time;
+		return total_time/m_input->getM();
+	}
+	else {
+		return std::numeric_limits<double>::max();
+	}
 }
 
 /*
