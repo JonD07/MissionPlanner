@@ -93,6 +93,10 @@ void Solution::PrintPlan(bool from_launch) {
 double Solution::Benchmark() {
 	if(ValidSolution()) {
 		double total_time = 0;
+		std::vector<int> drones_used;
+		for(int l = 0; l < m_input->getM(); l++) {
+			drones_used.push_back(0);
+		}
 
 		// Cycle through drones
 		for(int l = 0; l < m_input->getM(); l++) {
@@ -100,6 +104,9 @@ double Solution::Benchmark() {
 			for(int k = 0; k < m_input->getN(); k++) {
 				// Does sub-tour k contain stops?
 				if(tours_lkj.at(l).at(k).size() > 0) {
+					// Mark that this drone runs a tour
+					drones_used.at(l) = 1;
+
 					// Is this a relaunch?
 					if(k > 0) {
 						// Yes, add in battery swap time
@@ -128,7 +135,13 @@ double Solution::Benchmark() {
 			}
 		}
 
-		return total_time/m_input->getM();
+		// How many drones were actually deployed?
+		int drones_deployed = 0;
+		for(int l = 0; l < m_input->getM(); l++) {
+			drones_deployed += drones_used.at(l);
+		}
+
+		return total_time/drones_deployed;
 	}
 	else {
 		return std::numeric_limits<double>::max();
@@ -212,7 +225,7 @@ void Solution::GetSubTours(std::vector<std::string>* sub_tours) {
  * We do this by checking to see if each node is visited and checking the total
  * energy used by each drone on each sub-tour.
  */
-bool Solution::ValidSolution() {
+bool Solution::ValidSolution(bool print_errors) {
 	bool valid_solution = true;
 
 	// Verify that each sub-tour is visited at least once
@@ -232,7 +245,9 @@ bool Solution::ValidSolution() {
 				if(tour_energy > m_input->getB_l(l)) {
 					// We went over...
 					valid_solution = false;
-					fprintf(stderr,"[ERROR:ValidSolution] Sub-tour %d:%d is over energy budget! %.3f > %.3f\n", l, k, tour_energy, m_input->getB_l(l));
+					if(print_errors) {
+						fprintf(stderr,"[ERROR:ValidSolution] Sub-tour %d:%d is over energy budget! %.3f > %.3f\n", l, k, tour_energy, m_input->getB_l(l));
+					}
 				}
 
 				// Check each stop on this sub-tour
@@ -249,7 +264,9 @@ bool Solution::ValidSolution() {
 	for(int i = 0; i < m_input->getN(); i++) {
 		if(!visited.at(i)) {
 			valid_solution = false;
-			fprintf(stderr,"[ERROR:ValidSolution] Missed node %d\n", i);
+			if(print_errors) {
+				fprintf(stderr,"[ERROR:ValidSolution] Missed node %d\n", i);
+			}
 		}
 	}
 
@@ -301,6 +318,24 @@ void Solution::AddHL(const HoveringLocation& hl, int l, int k) {
 	if(l >= 0 && l < m_input->getM()) {
 		if(k >= 0 && k < m_input->getN()) {
 			tours_lkj.at(l).at(k).push_back(hl);
+		}
+	}
+}
+
+// Clears out any save solution in this class and imports the solution stored in other
+void Solution::UpdateSolution(const Solution* other) {
+	// Clear any current solution
+	ClearSolution();
+
+	/// Add in the other solution
+	// For-each drone
+	for(int l = 0; l < m_input->getM(); l++) {
+		// For-each sub-tour
+		for(int k = 0; k < m_input->getN(); k++) {
+			// Move hovering locations for l:k over to this solution
+			for(HoveringLocation hl : other->tours_lkj.at(l).at(k)) {
+				AddHL(hl,l,k);
+			}
 		}
 	}
 }

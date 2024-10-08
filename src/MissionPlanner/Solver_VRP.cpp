@@ -3,21 +3,22 @@
 
 Solver_VRP::Solver_VRP(bool pwlApprx) {
 	if(SANITY_PRINT)
-		printf("Hello from Greedy Solver!\n");
+		printf("Hello from VRP Solver!\n");
 	pwl_apprx = pwlApprx;
 }
 
 
 void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
-	/// Set k to be the number of drones
-	int K = input->getM();
+	/// Set k to zero
+	int K = 0;
+	bool increase_k = true;
 
-	bool increase_k = false;
 	std::vector<std::vector<int>> ordered_subtours;
 	std::vector<std::vector<int>> assignment_lk;
 	std::vector<std::vector<kPoint>> cluster_k;
 
-	do {
+	// While we are still increasing k...
+	while(increase_k) {
 		// Reset solution
  		ordered_subtours.clear();
 		assignment_lk.clear();
@@ -26,8 +27,19 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 			assignment_lk.push_back(clusters);
 		}
  		cluster_k.clear();
- 		I_crnt->ClearSolution();
+
+ 		// Make a solution for this run
+ 		Solution currentSolution(input);
+
+ 		/// Increment K by the number of drones
+ 		K++;
  		increase_k = false;
+
+ 		// Verify we did not go over the limit...
+		if(K > input->getN()) {
+			fprintf(stderr, "[ERROR:Solver_VRP:Solve] More sub-tours (%d) than nodes (%d)\n", K, input->getN());
+			exit(1);
+		}
 
 		/// Form k clusters
 		// Put each node into a kPoint
@@ -138,19 +150,20 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 
 		/// Form drone-to-sub-tour assignments
 		// Not so nice solution...
-		for(int k = 0; k < K/input->getM(); k++) {
+		for(int k = 0; k <= K/input->getM(); k++) {
 			// Used to rank sub-tour distances
 			std::priority_queue<max_float> tour_distance_queue;
 			// Used to rank drone max distances
 			std::priority_queue<max_float> drone_budget_queue;
 			int base_cluster_index = k*input->getM();
+			int sub_tours_remaining = ordered_subtours.size() - base_cluster_index;
 
 			if(DEBUG_SLVR_VRP) {
 				printf(" sub-tour set %d\n", k);
 			}
 
 			// Rank tour distances
-			for(int k_prime = 0; k_prime < input->getM(); k_prime++) {
+			for(int k_prime = 0; k_prime < input->getM() && k_prime < sub_tours_remaining; k_prime++) {
 				double tour_dist = 0;
 				double last_x = input->getX_b(), last_y = input->getY_b(), last_z = input->getZ_b();
 				// For each node in this tour...
@@ -178,7 +191,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 			}
 
 			// For each sub-tour
-			for(int k_prime = 0; k_prime < input->getM(); k_prime++) {
+			for(int k_prime = 0; k_prime < input->getM() && k_prime < sub_tours_remaining; k_prime++) {
 				// Pop off the top sub-tour and drone
 				max_float max_dist_tour = tour_distance_queue.top();
 				tour_distance_queue.pop();
@@ -194,9 +207,10 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 			}
 		}
 
-		/// Run hovering location optimizer
+		/// Run child class sub-tour improvement algorithm
+		bool valid_sub_tour = true;
 		// For each drone
-		for(int l = 0; l < input->getM() && !increase_k; l++) {
+		for(int l = 0; l < input->getM() && valid_sub_tour; l++) {
 			int drones_k = 0;
 			// For each sub-tour that this drone does
 			for(int k : assignment_lk.at(l)) {
@@ -212,10 +226,9 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 
 				// Run optimizer
 				HLOptimizer hlOptimizer;
-				bool valid_solution = hlOptimizer.Optimize(l, input, &sub_tour, &coords, false);
+				valid_sub_tour &= hlOptimizer.Optimize(l, input, &sub_tour, &coords, false);
 
-				if(valid_solution) {
-
+				if(valid_sub_tour) {
 					if(DEBUG_SLVR_VRP) {
 						printf("Good sub-tour %d:%d\n Adding hoving points:\n", l, drones_k);
 					}
@@ -223,7 +236,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 					// Store the found solution
 					for(int i = 0; i < boost::numeric_cast<int>(ordered_subtours.at(k).size()); i++) {
 						HoveringLocation hl(std::get<0>(coords.at(i)), std::get<1>(coords.at(i)), std::get<2>(coords.at(i)), ordered_subtours.at(k).at(i));
-						I_crnt->AddHL(hl,l,drones_k);
+						currentSolution.AddHL(hl,l,drones_k);
 
 						if(DEBUG_SLVR_VRP) {
 							printf("  (%.3f, %.3f, %.3f) for node %d (%.3f, %.3f, %.3f)\n", hl.fX, hl.fY, hl.fZ, hl.nodeServiced, input->getX_i(hl.nodeServiced), input->getY_i(hl.nodeServiced), input->getZ_i(hl.nodeServiced));
@@ -231,24 +244,45 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 					}
 				}
 				else {
-					increase_k = true;
+					if(DEBUG_SLVR_VRP) {
+						printf("Bad sub-tour %d:%d!\n", l, drones_k);
+					}
 				}
 				drones_k++;
 			}
 		}
 
-		if(increase_k) {
-			///   increase k by n
-			K += input->getM();
-			if(K > input->getN()) {
-				fprintf(stderr, "[ERROR:Solver_VRP:Solve] K too large: %d\n", K);
-				exit(1);
+		if(!valid_sub_tour || !currentSolution.ValidSolution()) {
+			///   increase k...
+			increase_k = true;
+			if(DEBUG_SLVR_VRP) {
+				printf("Increase k\n");
 			}
 		}
 		else {
-			///   done!
+			// Benchmark current solution
+			double currentObjective = currentSolution.Benchmark();
+
+			// Is this better than the current solution?
+			if(currentObjective < INF && currentObjective < I_crnt->Benchmark()) {
+				if(DEBUG_SLVR_VRP) {
+					printf("K = %d, found solution (%.3f) better than previous solution (%.3f)\n", K, currentObjective, I_crnt->Benchmark());
+				}
+
+				// Update the solution!
+				I_crnt->UpdateSolution(&currentSolution);
+				// Keep going, increasing k may help improve the solution
+				increase_k = true;
+			}
+			else if(currentObjective < INF) {
+				// No longer improving solution..
+				increase_k = false;
+				if(DEBUG_SLVR_VRP) {
+					printf("No longer improving solution.. Found solution (%.f) > incumbent (%.3f)\n** Algorithm Ended **\n", currentObjective, I_crnt->Benchmark());
+				}
+			}
 		}
-	} while(increase_k);
+	}
 }
 
 

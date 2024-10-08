@@ -81,13 +81,15 @@ public:
 	 * We do this by checking to see if each node is visited and checking the total
 	 * energy used by each drone on each sub-tour.
 	 */
-	bool ValidSolution();
+	bool ValidSolution(bool print_errors = false);
 	/*
 	 * Determines how much energy drone l will use if it completes the given tour
 	 */
 	double CalculateEnergy(int l, const std::vector<HoveringLocation>& tour);
 	// Place a hovering location into sub-tour k of drone l
 	void AddHL(const HoveringLocation& hl, int l = 0, int k = 0);
+	// Clears out any save solution in this class and imports the solution stored in other
+	void UpdateSolution(const Solution* other);
 	// Clears the current solution
 	void ClearSolution();
 
