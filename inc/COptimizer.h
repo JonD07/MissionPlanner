@@ -1,8 +1,8 @@
 /*
- * HLOptimizer.h
+ * COptimizer.h
  *
  * Created by:	Jonathan Diller
- * On: 			Sep 12, 2024
+ * On: 			Oct 8, 2024
  *
  * Description: Optimizer the hovering locations of a given sub-tour such
  * that the time to run the sub-tour is minimized.
@@ -21,20 +21,22 @@
 
 #include "Utilities.h"
 #include "Solver.h"
+#include "TourImprover.h"
 #include "gurobi_c++.h"
 
-#define DEBUG_HL_OPTMZR		DEBUG || 0
+#define DEBUG_CV_OPTMZR		DEBUG || 1
 
 #define CONST_RELAXATION(X)		X,X+0.1
 
 
-class HLOptimizer {
+class COptimizer : public TourImprover {
 public:
-	HLOptimizer();
+	COptimizer(bool pwa_flag);
 
 	// Finds optimized hovering locations. Returns false if no solution found (hit drone energy limit)
-	bool Optimize(int l, Input* input, const std::vector<int>* sub_tour, std::vector<std::tuple<double,double,double>>* cords, bool aprx_tx_curve = false);
+	bool ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tour, bool aprx_tx_curve = false);
 
 protected:
 private:
+	bool pwa_tx_curve;
 };

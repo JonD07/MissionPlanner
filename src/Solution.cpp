@@ -125,6 +125,11 @@ double Solution::Benchmark() {
 						// Determine node service time..
 						Node* node_i = m_input->getNode_i(hl.nodeServiced);
 						total_time += node_i->collectionTime(hl.fX, hl.fY, hl.fZ);
+
+						// Update position
+						x_prev = hl.fX;
+						y_prev = hl.fY;
+						z_prev = hl.fZ;
 					}
 
 					// Distance back to the base station

@@ -11,6 +11,10 @@
 #include "Solver_Greedy.h"
 #include "Solver_Opt.h"
 #include "Solver_VRP.h"
+#include "COptimizer.h"
+#include "TighteningHeuristic.h"
+#include "DummyHeuristic.h"
+
 
 
 
@@ -19,7 +23,7 @@
 #define REC_COMP_Z		0
 #define ESTIMATE_Z		1
 #define PRINT_RESULTS	0
-#define PRINT_SUBTOURS	1
+#define PRINT_SUBTOURS	0
 #define DATA_LOG_FORMAT	"alg_%d.dat"
 #define DATA_LOG_DEFLT_PATH	""
 #define NODE_DATA_PATH	"../data/node_data.dat"
@@ -81,6 +85,9 @@ int main(int argc, char *argv[]) {
 	Solver* solver = NULL;
 	Offline_Input input(argv[1]);
 	Solution solution(&input);
+	COptimizer cOptimizer(false);
+	TighteningHeuristic tHeuristic;
+	DummyHeuristic dHeuristic;
 
 	switch(algorithm) {
 	// Optimal solver
@@ -89,7 +96,7 @@ int main(int argc, char *argv[]) {
 	}
 	break;
 
-	// Greedy solver (more for mucking about with code base than actually useful)
+	// Greedy solver (more for mucking about with code base than actually useful) DummyHeuristic
 	case e_Algo_GREEDY: {
 		solver = new Solver_Greedy();
 	}
@@ -103,19 +110,19 @@ int main(int argc, char *argv[]) {
 
 	// Clustering followed by VRP algorithm (HL optimizing)
 	case e_Algo_VRP: {
-		solver = new Solver_VRP(false);
+		solver = new Solver_VRP(&cOptimizer);
 	}
 	break;
 
 	// Clustering followed by VRP algorithm (tightening heuristic)
 	case e_Algo_BASELINE: {
-		solver = new Solver_Baseline(true);
+		solver = new Solver_VRP(&tHeuristic);
 	}
 	break;
 
 	// Clustering followed by VRP algorithm (tightening heuristic)
 	case e_Algo_BL_NO_IMPRV: {
-		solver = new Solver_Baseline(false);
+		solver = new Solver_VRP(&dHeuristic);
 	}
 	break;
 
@@ -158,11 +165,11 @@ int main(int argc, char *argv[]) {
 		// File format: n m runmun computed_Z estimated_Z comp-time
 		fprintf(pOutputFile, "%d %d %d ", input.getN(), input.getM(), run_number);
 		fprintf(pOutputFile, "%.10f %f ", result, duration_s);
+		fprintf(pOutputFile, "%f ", input.getQ_i(0));
+		// Print if this is a valid solution
+		fprintf(pOutputFile, "%d ", solution.ValidSolution(true));
 
 		if(PRINT_SUBTOURS) {
-			fprintf(pOutputFile, "%f ", input.getQ_i(0));
-			// Print if this is a valid solution
-			fprintf(pOutputFile, "%d ", solution.ValidSolution(true));
 			// Grab sub-tour times
 			std::vector<std::pair<std::string,double>> sub_tours;
 			solution.GetSubTourTimes(&sub_tours);

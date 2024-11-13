@@ -1,10 +1,10 @@
 #include "Solver_VRP.h"
 
 
-Solver_VRP::Solver_VRP(bool pwlApprx) {
+Solver_VRP::Solver_VRP(TourImprover* improver) {
 	if(SANITY_PRINT)
 		printf("Hello from VRP Solver!\n");
-	pwl_apprx = pwlApprx;
+	m_pTImprover = improver;
 }
 
 
@@ -41,111 +41,116 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 			exit(1);
 		}
 
-		/// Form k clusters
-		// Put each node into a kPoint
-		std::vector<kPoint> nodePoints;
-		for(int i = 0; i < input->getN(); i++) {
-			Node* n_i = input->getNode_i(i);
-			kPoint pnt_i(i, 0, n_i->getX(), n_i->getY(), n_i->getZ());
-			nodePoints.push_back(pnt_i);
-		}
-
-		if(DEBUG_SLVR_VRP) {
-			printf("Running clustering algorithm\n");
-		}
-
-		// Run clustering algorithm
-		ClusteringAlgorithm clusteringAlg;
-		clusteringAlg.Solve(K, &nodePoints, &cluster_k);
-
-		if(DEBUG_SLVR_VRP) {
-			printf("Cluster:\n");
-			for(std::vector<kPoint> cluster : cluster_k) {
-				printf(" %d:", cluster.front().centroid_ID);
-				for(kPoint p : cluster) {
-					printf(" %d", p.point_ID);
-				}
-				printf("\n");
-			}
-		}
-
-		/// Solve TSP on each cluster
-		LKH_TSP_Solver tspSolver;
-		for(int k = 0; k < K; k++) {
-			// Create a vector with all of the stops (and the BS at the end)
-			std::vector<Stop> vStops;
-			// Fill vector with each point in the cluster
-			for(kPoint point : cluster_k.at(k)) {
-				Stop stp(point.point_ID, point.X, point.Y, point.Z);
-				vStops.push_back(stp);
-			}
-			// Add base station as last stop
-			{
-				Stop stp(-1, input->getX_b(), input->getY_b(), input->getZ_b());
-				vStops.push_back(stp);
+		//
+		/// Solve VRP
+		//
+		{
+			/// Form k clusters
+			// Put each node into a kPoint
+			std::vector<kPoint> nodePoints;
+			for(int i = 0; i < input->getN(); i++) {
+				Node* n_i = input->getNode_i(i);
+				kPoint pnt_i(i, 0, n_i->getX(), n_i->getY(), n_i->getZ());
+				nodePoints.push_back(pnt_i);
 			}
 
-			// Create empty path vector (solver will fill this with the solution)
-			std::vector<int> vPath;
-
-			// Run TSP solver
-			tspSolver.Solve_TSP(vStops, vPath);
-
-			// Sanity print..
 			if(DEBUG_SLVR_VRP) {
-				printf("VRP solution:\n");
-				for(int i : vPath) {
-					printf(" %d: %d (%f, %f, %f)\n", i, vStops.at(i).ID, vStops.at(i).X, vStops.at(i).Y, vStops.at(i).Z);
+				printf("Running clustering algorithm\n");
+			}
+
+			// Run clustering algorithm
+			ClusteringAlgorithm clusteringAlg;
+			clusteringAlg.Solve(K, &nodePoints, &cluster_k);
+
+			if(DEBUG_SLVR_VRP) {
+				printf("Cluster:\n");
+				for(std::vector<kPoint> cluster : cluster_k) {
+					printf(" %d:", cluster.front().centroid_ID);
+					for(kPoint p : cluster) {
+						printf(" %d", p.point_ID);
+					}
+					printf("\n");
 				}
 			}
 
-			// Tour vector (these are the node's actual i values)
-			std::vector<int> vTour_i;
+			/// Solve TSP on each cluster
+			LKH_TSP_Solver tspSolver;
+			for(int k = 0; k < K; k++) {
+				// Create a vector with all of the stops (and the BS at the end)
+				std::vector<Stop> vStops;
+				// Fill vector with each point in the cluster
+				for(kPoint point : cluster_k.at(k)) {
+					Stop stp(point.point_ID, point.X, point.Y, point.Z);
+					vStops.push_back(stp);
+				}
+				// Add base station as last stop
+				{
+					Stop stp(-1, input->getX_b(), input->getY_b(), input->getZ_b());
+					vStops.push_back(stp);
+				}
 
-			// We need to put node -1 first.. Find this node
-			{
-				int iteration = 0, nodes_found = 0;
-				bool found_bs = false;
-				while(true) {
-					int i = iteration%boost::numeric_cast<int>(vStops.size());
+				// Create empty path vector (solver will fill this with the solution)
+				std::vector<int> vPath;
 
-					if(found_bs) {
-						// We found the BS. Add this node to the tour
-						vTour_i.push_back(vStops.at(vPath.at(i)).ID);
-						nodes_found++;
-					}
-					else {
-						// Still searching..
-						if(vStops.at(vPath.at(i)).ID == -1) {
-							// Found the base station!
-							found_bs = true;
+				// Run TSP solver
+				tspSolver.Solve_TSP(vStops, vPath);
+
+//				// Sanity print..
+//				if(DEBUG_SLVR_VRP) {
+//					printf("VRP solution:\n");
+//					for(int i : vPath) {
+//						printf(" %d: %d (%f, %f, %f)\n", i, vStops.at(i).ID, vStops.at(i).X, vStops.at(i).Y, vStops.at(i).Z);
+//					}
+//				}
+
+				// Tour vector (these are the node's actual i values)
+				std::vector<int> vTour_i;
+
+				// We need to put node -1 first.. Find this node
+				{
+					int iteration = 0, nodes_found = 0;
+					bool found_bs = false;
+					while(true) {
+						int i = iteration%boost::numeric_cast<int>(vStops.size());
+
+						if(found_bs) {
+							// We found the BS. Add this node to the tour
+							vTour_i.push_back(vStops.at(vPath.at(i)).ID);
 							nodes_found++;
 						}
-					}
+						else {
+							// Still searching..
+							if(vStops.at(vPath.at(i)).ID == -1) {
+								// Found the base station!
+								found_bs = true;
+								nodes_found++;
+							}
+						}
 
-					// Have we found all of the stops?
-					if(nodes_found >= boost::numeric_cast<int>(vPath.size())) {
-						break;
-					}
+						// Have we found all of the stops?
+						if(nodes_found >= boost::numeric_cast<int>(vPath.size())) {
+							break;
+						}
 
-					iteration++;
+						iteration++;
+					}
 				}
+
+				// Sanity print..
+				if(DEBUG_SLVR_VRP) {
+					printf("Fixed solution:\n");
+					for(int i : vTour_i) {
+						printf(" %d (%f, %f, %f)\n", i, input->getX_i(i), input->getY_i(i), input->getZ_i(i));
+					}
+				}
+
+				// Store the final solution
+				ordered_subtours.push_back(vTour_i);
 			}
 
-			// Sanity print..
 			if(DEBUG_SLVR_VRP) {
-				printf("Fixed solution:\n");
-				for(int i : vTour_i) {
-					printf(" %d (%f, %f, %f)\n", i, input->getX_i(i), input->getY_i(i), input->getZ_i(i));
-				}
+				printf("Assigning drones to sub-tours\n");
 			}
-
-			// Store the final solution
-			ordered_subtours.push_back(vTour_i);
-		}
-
-		if(DEBUG_SLVR_VRP) {
-			printf("Assigning drones to sub-tours\n");
 		}
 
 		/// Form drone-to-sub-tour assignments
@@ -214,19 +219,20 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 			int drones_k = 0;
 			// For each sub-tour that this drone does
 			for(int k : assignment_lk.at(l)) {
-				std::vector<int> sub_tour;
-				std::vector<std::tuple<double,double,double>> coords;
+				// Create a list of points that holds this solution
+				std::vector<Point> sub_tour;
+
 				// For each node in this tour
 				for(int i : ordered_subtours.at(k)) {
-					// Create a coordinate to hold final solution
-					std::tuple<double,double,double> coord;
-					coords.push_back(coord);
-					sub_tour.push_back(i);
+					// Create a sub-tour using the x,y,(z+z_s) of each node
+					Point pt(i, input->getX_i(i), input->getY_i(i), input->getZ_i(i) + input->getZs_i(i));
+					sub_tour.push_back(pt);
 				}
 
-				// Run optimizer
-				HLOptimizer hlOptimizer;
-				valid_sub_tour &= hlOptimizer.Optimize(l, input, &sub_tour, &coords, false);
+				// Run the given sub-tour improver
+				{
+					valid_sub_tour = m_pTImprover->ImproveSubTour(l, input, &sub_tour, false);
+				}
 
 				if(valid_sub_tour) {
 					if(DEBUG_SLVR_VRP) {
@@ -234,8 +240,8 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 					}
 
 					// Store the found solution
-					for(int i = 0; i < boost::numeric_cast<int>(ordered_subtours.at(k).size()); i++) {
-						HoveringLocation hl(std::get<0>(coords.at(i)), std::get<1>(coords.at(i)), std::get<2>(coords.at(i)), ordered_subtours.at(k).at(i));
+					for(int i = 0; i < boost::numeric_cast<int>(sub_tour.size()); i++) {
+						HoveringLocation hl(sub_tour.at(i).x, sub_tour.at(i).y, sub_tour.at(i).z, sub_tour.at(i).node_id);
 						currentSolution.AddHL(hl,l,drones_k);
 
 						if(DEBUG_SLVR_VRP) {

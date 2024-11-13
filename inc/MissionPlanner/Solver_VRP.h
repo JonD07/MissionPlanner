@@ -21,6 +21,8 @@
 #include "HLOptimizer.h"
 #include "ClusteringAlgorithm.h"
 #include "LKH_TSP_Solver.h"
+#include "COptimizer.h"
+#include "TourImprover.h"
 
 
 #define DEBUG_SLVR_VRP		DEBUG || 1
@@ -28,12 +30,12 @@
 
 class Solver_VRP : public Solver {
 public:
-	Solver_VRP(bool pwlApprx = false);
+	Solver_VRP(TourImprover* improver);
 
 	void Solve(Input* input, Solution* I_final);
+	bool ImproveSubTour();
 
 protected:
 private:
-	// Used to for a peice-wise linear approximation of the TX curve (not always fast...)
-	bool pwl_apprx;
+	TourImprover* m_pTImprover;
 };

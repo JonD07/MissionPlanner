@@ -45,8 +45,10 @@ include_directories(
 add_executable(mission-planner
 	src/MissionPlanner/main.cpp
 	src/ClusteringAlgorithm.cpp
+	src/COptimizer.cpp
 	src/Drone.cpp
 	src/DroneGenerator.cpp
+	src/DummyHeuristic.cpp
 	src/FileReader.cpp
 	src/HLOptimizer.cpp
 	src/Input.cpp
@@ -56,6 +58,7 @@ add_executable(mission-planner
 	src/Solution.cpp
 	src/Solver.cpp
 	src/TighteningHeuristic.cpp
+	src/TourImprover.cpp
 	src/Utilities.cpp
 	src/MissionPlanner/Offline_Input.cpp
 	src/MissionPlanner/Solver_Baseline.cpp
