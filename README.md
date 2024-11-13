@@ -60,6 +60,8 @@ cmake ..
 make
 ```
 
+If you get an error stating "Could NOT find GUROBI (missing: GUROBI_LIBRARY)", you likely need to update the FindGUROBI.cmake file. Line 7 of this file specifies which Gurobi version we are using (it looks something like `NAMES gurobi gurobi###`). Update the numbers in `gurobi###` to match the major and minor version of Gurobi. At the time of writing, Gurobi 12.0.0 is the latest version of Gurobi, so the correct cmake argument should be `gurobi120`.
+
 To run the solver, perform the following from the root directory
 
 ```
