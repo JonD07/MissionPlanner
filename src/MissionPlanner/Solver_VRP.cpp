@@ -37,8 +37,13 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 
  		// Verify we did not go over the limit...
 		if(K > input->getN()) {
-			fprintf(stderr, "[ERROR:Solver_VRP:Solve] More sub-tours (%d) than nodes (%d)\n", K, input->getN());
-			exit(1);
+			if(I_crnt->ValidSolution()) {
+				return;
+			}
+			else {
+				fprintf(stderr, "[ERROR:Solver_VRP:Solve] More sub-tours (%d) than nodes (%d)\n", K, input->getN());
+				exit(1);
+			}
 		}
 
 		//
