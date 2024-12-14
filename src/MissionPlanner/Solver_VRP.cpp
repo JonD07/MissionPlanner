@@ -9,7 +9,7 @@ Solver_VRP::Solver_VRP(TourImprover* improver) {
 
 
 void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
-	/// Set k to zero
+	/// Set k (Subtour) to zero
 	int K = 0;
 	bool increase_k = true;
 
@@ -59,7 +59,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 				nodePoints.push_back(pnt_i);
 			}
 
-			if(DEBUG_SLVR_VRP) {
+			if(DEBUG_SOLVER_VRP) {
 				printf("Running clustering algorithm\n");
 			}
 
@@ -67,7 +67,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 			ClusteringAlgorithm clusteringAlg;
 			clusteringAlg.Solve(K, &nodePoints, &cluster_k);
 
-			if(DEBUG_SLVR_VRP) {
+			if(DEBUG_SOLVER_VRP) {
 				printf("Cluster:\n");
 				for(std::vector<kPoint> cluster : cluster_k) {
 					printf(" %d:", cluster.front().centroid_ID);
@@ -101,7 +101,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 				tspSolver.Solve_TSP(vStops, vPath);
 
 //				// Sanity print..
-//				if(DEBUG_SLVR_VRP) {
+//				if(DEBUG_SOLVER_VRP) {
 //					printf("VRP solution:\n");
 //					for(int i : vPath) {
 //						printf(" %d: %d (%f, %f, %f)\n", i, vStops.at(i).ID, vStops.at(i).X, vStops.at(i).Y, vStops.at(i).Z);
@@ -142,7 +142,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 				}
 
 				// Sanity print..
-				if(DEBUG_SLVR_VRP) {
+				if(DEBUG_SOLVER_VRP) {
 					printf("Fixed solution:\n");
 					for(int i : vTour_i) {
 						printf(" %d (%f, %f, %f)\n", i, input->getX_i(i), input->getY_i(i), input->getZ_i(i));
@@ -153,7 +153,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 				ordered_subtours.push_back(vTour_i);
 			}
 
-			if(DEBUG_SLVR_VRP) {
+			if(DEBUG_SOLVER_VRP) {
 				printf("Assigning drones to sub-tours\n");
 			}
 		}
@@ -168,7 +168,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 			int base_cluster_index = k*input->getM();
 			int sub_tours_remaining = ordered_subtours.size() - base_cluster_index;
 
-			if(DEBUG_SLVR_VRP) {
+			if(DEBUG_SOLVER_VRP) {
 				printf(" sub-tour set %d\n", k);
 			}
 
@@ -208,7 +208,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 				max_float strongest_drone = drone_budget_queue.top();
 				drone_budget_queue.pop();
 
-				if(DEBUG_SLVR_VRP) {
+				if(DEBUG_SOLVER_VRP) {
 					printf("  drone %d (%f) goes on tour %d (%f)\n", strongest_drone.ID, strongest_drone.val, max_dist_tour.ID, max_dist_tour.val);
 				}
 
@@ -240,7 +240,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 				}
 
 				if(valid_sub_tour) {
-					if(DEBUG_SLVR_VRP) {
+					if(DEBUG_SOLVER_VRP) {
 						printf("Good sub-tour %d:%d\n Adding hoving points:\n", l, drones_k);
 					}
 
@@ -249,13 +249,13 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 						HoveringLocation hl(sub_tour.at(i).x, sub_tour.at(i).y, sub_tour.at(i).z, sub_tour.at(i).node_id);
 						currentSolution.AddHL(hl,l,drones_k);
 
-						if(DEBUG_SLVR_VRP) {
+						if(DEBUG_SOLVER_VRP) {
 							printf("  (%.3f, %.3f, %.3f) for node %d (%.3f, %.3f, %.3f)\n", hl.fX, hl.fY, hl.fZ, hl.nodeServiced, input->getX_i(hl.nodeServiced), input->getY_i(hl.nodeServiced), input->getZ_i(hl.nodeServiced));
 						}
 					}
 				}
 				else {
-					if(DEBUG_SLVR_VRP) {
+					if(DEBUG_SOLVER_VRP) {
 						printf("Bad sub-tour %d:%d!\n", l, drones_k);
 					}
 				}
@@ -266,7 +266,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 		if(!valid_sub_tour || !currentSolution.ValidSolution()) {
 			///   increase k...
 			increase_k = true;
-			if(DEBUG_SLVR_VRP) {
+			if(DEBUG_SOLVER_VRP) {
 				printf("Increase k\n");
 			}
 		}
@@ -276,7 +276,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 
 			// Is this better than the current solution?
 			if(currentObjective < INF && currentObjective < I_crnt->Benchmark()) {
-				if(DEBUG_SLVR_VRP) {
+				if(DEBUG_SOLVER_VRP) {
 					printf("K = %d, found solution (%.3f) better than previous solution (%.3f)\n", K, currentObjective, I_crnt->Benchmark());
 				}
 
@@ -288,7 +288,7 @@ void Solver_VRP::Solve(Input* input, Solution* I_crnt) {
 			else if(currentObjective < INF) {
 				// No longer improving solution..
 				increase_k = false;
-				if(DEBUG_SLVR_VRP) {
+				if(DEBUG_SOLVER_VRP) {
 					printf("No longer improving solution.. Found solution (%.f) > incumbent (%.3f)\n** Algorithm Ended **\n", currentObjective, I_crnt->Benchmark());
 				}
 			}

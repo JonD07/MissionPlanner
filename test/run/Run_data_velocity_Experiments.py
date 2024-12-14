@@ -59,6 +59,11 @@ def run_executable(alg, results_path, run_num):
 
 	match = re.search(r"\(([^)]+)\)", formatted_stdout[-2].decode())  # Find the tuple-like part
 
+	for line in formatted_stdout:
+		# print(line.decode())
+		if "!!!" in line.decode():
+			print(line.decode())
+
 	if match:
 		tuple_test = f"({match.group(1)})"  # Reconstruct the tuple string
 		first_element = ast.literal_eval(tuple_test)[0]  # Safely evaluate and extract the first element
@@ -67,7 +72,7 @@ def run_executable(alg, results_path, run_num):
 		print(first_element)
 		print(second_element)
 		print(third_element)
-	distance_from_sensor = math.sqrt((100 - float(first_element))**2 + float(second_element)**2 + float(third_element)**2)
+	distance_from_sensor = math.sqrt((100 - float(first_element))**2 + (100 - float(second_element))**2 + (10 - float(third_element))**2)
 	print(distance_from_sensor)
 
 	hovering_points_list.append(distance_from_sensor)
@@ -82,7 +87,7 @@ if __name__ == '__main__':
 
 # Run data_velocity experiment (increasing data)
 	q = 0
-	for i in range(40):
+	for i in range(80):
 		prepare_data_scenario(exp1_path + f"plot_{i}.txt",1)
 		print(f"Data Velocity Experiment on plot_{i}.txt")
 		# Run greedy

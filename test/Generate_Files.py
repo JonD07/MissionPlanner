@@ -4,21 +4,22 @@ import math
 INC_NODES = False
 INC_ALPHA = False
 INC_DATA = False
-FW_TEST = True
+FW_TEST = False
+DATA_SIZE_VS_DISTANCE_TEST = True	# Vary data size for one node
 
 # Z coordinate range
 Z_MIN = -10
 Z_MAX = 50
 # Data range
-Q_MIN = 0.125
-Q_MAX = 64.0
+Q_MIN = 0.001
+Q_MAX = 16.384
 
 # Parameters
 NUM_PLOTS = 50
 
 # Increasing nodes
-START_COUNT = 5
-END_COUNT = 200
+START_COUNT = 1
+END_COUNT = 2
 Node_Increment = 5
 # 75 per km^2
 ALPHA = 0.000075
@@ -30,8 +31,8 @@ END_DENSE = 151
 DENSE_INC = 5
 
 # Increasing Q
-START_Q = 0.0625
-END_Q = 1024
+START_Q = 0.001
+END_Q = 16384 * 2**3
 Q_INC_FACTOR = 2
 
 
@@ -46,6 +47,37 @@ def get_rnd_node():
 		# Pi 4
 		return "1 127.0.0.1"
 		
+# TODO Move this to bottom of file so constants are in same order.
+if DATA_SIZE_VS_DISTANCE_TEST:
+	FILE_PATH = "test/data_velocity_test/"
+	# # Loop over the number of sensors to use (n)
+	# for n in range(START_COUNT, END_COUNT):
+	# 	# Generate NUM_PLOTS plots
+	MAX_Q_FACTOR = 80
+	BASE_PACKET_SIZE = 0.001
+	# for i in range(MAX_Q_FACTOR):
+	# Open the file
+	for power_of_two in range(MAX_Q_FACTOR):
+		print(power_of_two)
+		file_name = f"{FILE_PATH}plot_{power_of_two}.txt"
+		with open(file_name, 'w') as file:
+			# Make a new file for each different packet size
+			file.write(f"{1}\n")
+			# For our one node Pick a point 100 meters from starting point. 
+			# 45 seems to be the lower limit at 10m/s
+			x = 100
+			y = 100
+			z = 10
+			z_s = 0
+			q = BASE_PACKET_SIZE* 1.189207115 **power_of_two
+			# Write the results to file for pi 4
+			file.write(f"{x} {y} {z} {z_s} {q} "+ "1 127.0.0.1"+"\n")
+			# Pick base station
+			x_b = 0
+			y_b = 0
+			z_b = 0
+			# Record Base Station (BS?) position
+			file.write(f"0 0 0\n")
 
 # What increases?
 if INC_NODES:

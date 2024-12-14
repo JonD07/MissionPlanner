@@ -1,4 +1,5 @@
 #include "COptimizer.h"
+#include "COptimizer_callback.h"
 
 
 /*
@@ -24,6 +25,8 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 		if(aprx_tx_curve) {
 			model.set(GRB_IntParam_NonConvex, 2);
 			model.set(GRB_DoubleParam_TimeLimit, 500.0);
+		} else{
+			model.set(GRB_IntParam_LazyConstraints, 1);
 		}
 
 		if(DEBUG_CV_OPTMZR) {
@@ -114,7 +117,10 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 			GRBVar r = model.addVar(0.0, mrate, 0.0, GRB_CONTINUOUS,  "r_" + itos(j));
 			R_j.push_back(r);
 		}
-
+		if(!aprx_tx_curve){
+			// Create callback class
+			callback_class callback_object = callback_class(&R_j, &Dn_j);
+		}
 
 		//
 		/// Create constraints
@@ -160,54 +166,109 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 
 			model.addConstr(lhs <= input->getB_l(l), "pT_l_leq_b");
 		}
+		
 
 		// Limit TX rate
 		if(aprx_tx_curve) {
 			// Use a PWL approximation
 			for(int j = 0; j < M_k; j++) {
 				// Get battery details for this node
-				int i = sub_tour->at(j).node_id;
-				double a, b, r_m, c;
-				input->getTXParams_i(i, &a, &b, &r_m, &c);
+				int node = sub_tour->at(j).node_id;
+				double a, b, max_rate, c;
+				input->getTXParams_i(node, &a, &b, &max_rate, &c);
 
 				// Compute points (D, R) of R = a/(D)^2 + b for some step length
 				double intv = 2.0;
 				double xmax = 150.0;
-				int len = (int) ceil((xmax-sqrt(a/(r_m - b) - c))/intv) + 1;
+				int len = (int) ceil((xmax-sqrt(a/(max_rate - b) - c))/intv) + 1;
+				std::cout << "!!!Length " << len << std::endl;
 				double* xpts = new double[len];
 				double* upts = new double[len];
 				xpts[0] = 0.0;
-				upts[0] = r_m;
-				xpts[1] = sqrt(a/(r_m - b) - c);
-				upts[1] = r_m;
+				upts[0] = max_rate;
+				xpts[1] = sqrt(a/(max_rate - b) - c);
+				upts[1] = max_rate;
 				for(int i = 2; i < len; i++) {
 					xpts[i] = i*intv + xpts[1];
-					upts[i] = std::min(a/(pow(i*intv, 2) + c) + b, r_m);
+					std::cout << "!!!xpts " << xpts[i] << std::endl;
+					upts[i] = std::min(a/(pow(xpts[i], 2) + c) + b, max_rate);
+					std::cout << "!!!upts " << upts[i] << std::endl;
 				}
+				std::cout << "!!!Parameters," << j << "," << a  << "," << b << "," << max_rate << "," << c << "\n";
+
 				model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), len, xpts, upts, "R_"+itos(j)+"_leq_math");
+			} }
+			else{
+				// Single linear approximation using lookup table
+				for(int j = 0; j < M_k; j++) {
+					int node_id = sub_tour->at(j).node_id;
+					// Get battery details for this node
+					double a, b, max_rate, c;
+					input->getTXParams_i(node_id, &a, &b, &max_rate, &c);
+					// get node type (pi 3 or pi 4)
+					double node_type;
+					node_type = input->getNodeType_i(node_id);
+					// get packet size for this node
+					double q;
+					q = input->getQ_i(node_id);
+					// get velocity for this drone
+					double velocity;
+					velocity = input->getV_l(l);
+					// Use lookup table to get distance
+					double distance = input->lookup_distance(node_type, q, velocity);
+
+
+					// Determine line equation to approximate TX rate curve
+					// First two points are the saturated TX rate
+					double y1 = max_rate;
+					double x1 = sqrt(a/(y1-b)-c);
+					// Second two points 
+					// double x2 = sqrt(a/(y2-b)-c); // lookup
+					double x2 = distance;
+					// double y2 = max_rate/2.0;
+					double y2 = a/(pow(x2, 2) + c) + b;
+					// double m = (y2-y1)/(x2-x1);
+
+					int len = 2;
+					double* xpts = new double[len];
+					double* upts = new double[len];
+
+					xpts[0] = x1;
+					xpts[1] = x2;
+					upts[0] = y1;
+					upts[1] = y2;
+
+					double m = (y2-y1)/(x2-x1);
+
+
+					// if(DEBUG_CV_OPTMZR)
+						// printf(" %d : a=%.2f, b=%.2f, max_rate=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n", i, a, b, max_rate, c,m,x1,y1);
+
+					model.addQConstr(R_j.at(j) <= (m*(Dn_j.at(j) - x2) + y2), "R_"+itos(j)+"_leq_math");
+					// model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), 2, xpts, upts, "R_"+itos(j)+"_leq_math");
+				}
 			}
-		}
-		else {
-			// Single linear approximation (fast!)
-			for(int j = 0; j < M_k; j++) {
-				// Get battery details for this node
-				int i = sub_tour->at(j).node_id;
-				double a, b, r_m, c;
-				input->getTXParams_i(i, &a, &b, &r_m, &c);
+			// else {
+			// 	// Single linear approximation (fast!)
+			// 	for(int j = 0; j < M_k; j++) {
+			// 		// Get battery details for this node
+			// 		int i = sub_tour->at(j).node_id;
+			// 		double a, b, max_rate, c;
+			// 		input->getTXParams_i(i, &a, &b, &max_rate, &c);
 
-				// Determine line equation to approximate TX rate curve
-				double y1 = r_m;
-				double x1 = sqrt(a/(y1-b)-c);
-				double y2 = r_m/2.0;
-				double x2 = sqrt(a/(y2-b)-c);
-				double m = (y2-y1)/(x2-x1);
+			// 		// Determine line equation to approximate TX rate curve
+			// 		double y1 = max_rate;
+			// 		double x1 = sqrt(a/(y1-b)-c);
+			// 		double y2 = max_rate/2.0;
+			// 		double x2 = sqrt(a/(y2-b)-c); // lookup
+			// 		double m = (y2-y1)/(x2-x1);
 
-				if(DEBUG_CV_OPTMZR)
-					printf(" %d : a=%.2f, b=%.2f, r_m=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n",i,a, b, r_m, c,m,x1,y1);
+			// 		if(DEBUG_CV_OPTMZR)
+			// 			printf(" %d : a=%.2f, b=%.2f, max_rate=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n",i,a, b, max_rate, c,m,x1,y1);
 
-				model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
-			}
-		}
+			// 		model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
+			// 	}
+			// }
 
 
 		//
@@ -237,7 +298,9 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 		//
 		/// Run optimizer
 		//
+	
 		model.optimize();
+		
 
 
 		if(model.get(GRB_IntAttr_SolCount) >= 1) {

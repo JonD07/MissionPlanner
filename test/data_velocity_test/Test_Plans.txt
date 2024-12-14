@@ -1,0 +1,8 @@
+The data velocity tests are meant to find the relationship between distance and data (Q) size.
+Rather than the inverse square law of electromagnetism, this distance-packet size relationship
+may be more useful.
+
+Q will be varied from 0.001 (1kB) to 16.384 (16MB), a difference of (2^16), and graphed against distance.
+
+Velocity will then be varied with the expectation that it will move the (Sigmoid) graph
+described above left and right across the distance axis.

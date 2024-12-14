@@ -3,8 +3,8 @@ import shutil
 import random
 
 # Path to the C++ executable
-exec_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/build/mission-planner"
-exp1_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/test/Experiment1/"
+exec_path = "../../build/mission-planner"
+exp1_path = "../Experiment1/"
 exp2_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/test/Experiment2/"
 exp3_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/test/Experiment3/"
 
