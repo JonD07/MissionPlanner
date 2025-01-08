@@ -1,17 +1,17 @@
 #include "COptimizer.h"
-#include "COptimizer_callback.h"
+// #include "COptimizer_callback.h"
 
 
 /*
- * Convex optimization approach to improving sub-tours. The pwa_flag tells the solver to use
- * a piece-wise approximation of the TX curve (this is NOT convex).
- */
-COptimizer::COptimizer(bool pwa_flag) : pwa_tx_curve(pwa_flag) {}
+//  * Convex optimization approach to improving sub-tours. The pwa_flag tells the solver to use
+//  * a piece-wise approximation of the TX curve (this is NOT convex).
+//  */
+COptimizer::COptimizer(Constraint_tx_type constraint_type) : constraint_type(constraint_type) {}
 
 
 // Finds optimized hovering locations. Returns false if no solution found (hit drone energy limit)
 bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tour, bool aprx_tx_curve) {
-	aprx_tx_curve |= pwa_tx_curve;
+	// aprx_tx_curve |= pwa_tx_curve;
 
 	int M_k = boost::numeric_cast<int>(sub_tour->size());
 	try {
@@ -22,10 +22,10 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 		env.set("LogFile", "mip1.log");
 		env.start();
 		GRBModel model = GRBModel(env);
-		if(aprx_tx_curve) {
+		if(constraint_type == Constraint_tx_type::PWL) {
 			model.set(GRB_IntParam_NonConvex, 2);
 			model.set(GRB_DoubleParam_TimeLimit, 500.0);
-		} else{
+		} else if(constraint_type == Constraint_tx_type::LAZY){
 			model.set(GRB_IntParam_LazyConstraints, 1);
 		}
 
@@ -117,7 +117,7 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 			GRBVar r = model.addVar(0.0, mrate, 0.0, GRB_CONTINUOUS,  "r_" + itos(j));
 			R_j.push_back(r);
 		}
-		if(!aprx_tx_curve){
+		if(constraint_type == Constraint_tx_type::LAZY){
 			// Create callback class
 			callback_class callback_object = callback_class(&R_j, &Dn_j);
 		}
@@ -169,7 +169,7 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 		
 
 		// Limit TX rate
-		if(aprx_tx_curve) {
+		if(constraint_type == Constraint_tx_type::PWL) {
 			// Use a PWL approximation
 			for(int j = 0; j < M_k; j++) {
 				// Get battery details for this node
@@ -267,6 +267,7 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 			// 			printf(" %d : a=%.2f, b=%.2f, max_rate=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n",i,a, b, max_rate, c,m,x1,y1);
 
 			// 		model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
+			// 		Try something that is either q or not pwl
 			// 	}
 			// }
 

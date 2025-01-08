@@ -341,6 +341,7 @@ Node* Input::getNode_i(int i) {
 
 double Input::lookup_distance(int node_type, double velocity, double q_size) {
 	// We will round everything down
+	//use sizeof to clean up these hardcoded constants. Explanation of these numbers is in input.h
 	uint8_t velocity_index = (velocity / 4) - 1;
 	int q_size_index = int( (log(q_size) - log(.001)) / log(1.189207115));
 	return distance_lookup_table[node_type][velocity_index][q_size_index];

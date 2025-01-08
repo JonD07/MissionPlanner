@@ -31,10 +31,17 @@
 
 #define CONST_RELAXATION(X)		X,X+0.1
 
+// To easily adjust code for new constraint types
+enum Constraint_tx_type{
+	SINGLE_APPROXIMATION = 0,  //Single line approximation from lookup table
+	PWL,                       //Piecewise linear constraints
+	LAZY                       //Lazy constraint (TODO rename this to something more accurate.)
+};
+
 
 class COptimizer : public TourImprover {
 public:
-	COptimizer(uint16_t constraint_type);
+	COptimizer(Constraint_tx_type constraint_type);
 
 	// Finds optimized hovering locations. Returns false if no solution found (hit drone energy limit)
 	bool ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tour, bool aprx_tx_curve = false);
@@ -44,5 +51,5 @@ public:
 
 protected:
 private:
-	bool pwa_tx_curve;
+	Constraint_tx_type constraint_type;
 };
