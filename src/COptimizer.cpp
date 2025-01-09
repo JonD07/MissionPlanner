@@ -119,7 +119,7 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 		}
 		if(constraint_type == Constraint_tx_type::LAZY){
 			// Create callback class
-			callback_class callback_object = callback_class(&R_j, &Dn_j);
+			// callback_class callback_object = callback_class(&R_j, &Dn_j);
 		}
 
 		//
@@ -169,7 +169,9 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 		
 
 		// Limit TX rate
-		if(constraint_type == Constraint_tx_type::PWL) {
+		switch (constraint_type)
+		{
+		case Constraint_tx_type::PWL:
 			// Use a PWL approximation
 			for(int j = 0; j < M_k; j++) {
 				// Get battery details for this node
@@ -197,9 +199,11 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 				std::cout << "!!!Parameters," << j << "," << a  << "," << b << "," << max_rate << "," << c << "\n";
 
 				model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), len, xpts, upts, "R_"+itos(j)+"_leq_math");
-			} }
-			else{
-				// Single linear approximation using lookup table
+			} 
+			break;
+
+		case Constraint_tx_type::LAZY:
+			// Single linear approximation using lookup table
 				for(int j = 0; j < M_k; j++) {
 					int node_id = sub_tour->at(j).node_id;
 					// Get battery details for this node
@@ -247,30 +251,35 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 					model.addQConstr(R_j.at(j) <= (m*(Dn_j.at(j) - x2) + y2), "R_"+itos(j)+"_leq_math");
 					// model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), 2, xpts, upts, "R_"+itos(j)+"_leq_math");
 				}
-			}
-			// else {
-			// 	// Single linear approximation (fast!)
-			// 	for(int j = 0; j < M_k; j++) {
-			// 		// Get battery details for this node
-			// 		int i = sub_tour->at(j).node_id;
-			// 		double a, b, max_rate, c;
-			// 		input->getTXParams_i(i, &a, &b, &max_rate, &c);
+			break;
 
-			// 		// Determine line equation to approximate TX rate curve
-			// 		double y1 = max_rate;
-			// 		double x1 = sqrt(a/(y1-b)-c);
-			// 		double y2 = max_rate/2.0;
-			// 		double x2 = sqrt(a/(y2-b)-c); // lookup
-			// 		double m = (y2-y1)/(x2-x1);
+		case Constraint_tx_type::SINGLE_APPROXIMATION:
+			// Single linear approximation (fast!)
+				for(int j = 0; j < M_k; j++) {
+					// Get battery details for this node
+					int i = sub_tour->at(j).node_id;
+					double a, b, max_rate, c;
+					input->getTXParams_i(i, &a, &b, &max_rate, &c);
 
-			// 		if(DEBUG_CV_OPTMZR)
-			// 			printf(" %d : a=%.2f, b=%.2f, max_rate=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n",i,a, b, max_rate, c,m,x1,y1);
+					// Determine line equation to approximate TX rate curve
+					double y1 = max_rate;
+					double x1 = sqrt(a/(y1-b)-c);
+					double y2 = max_rate/2.0;
+					double x2 = sqrt(a/(y2-b)-c); // lookup
+					double m = (y2-y1)/(x2-x1);
 
-			// 		model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
-			// 		Try something that is either q or not pwl
-			// 	}
-			// }
+					if(DEBUG_CV_OPTMZR)
+						printf(" %d : a=%.2f, b=%.2f, max_rate=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n",i,a, b, max_rate, c,m,x1,y1);
 
+					model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
+					// Try something that is either q or not pwl
+				}
+			break;
+		
+		default:
+			std::cout << "Unrecognized constratin tx type" << std::endl;
+			break;
+		}
 
 		//
 		/// Set the objective function
