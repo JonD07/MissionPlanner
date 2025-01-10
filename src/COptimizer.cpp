@@ -8,6 +8,120 @@
 //  */
 COptimizer::COptimizer(Constraint_tx_type constraint_type) : constraint_type(constraint_type) {}
 
+/*
+Helper Function for generating single approximation (the simple ones) constraints */
+void COptimizer::GenerateSingleApproxConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j){
+	// Single linear approximation (fast!)
+	int M_k = boost::numeric_cast<int>(sub_tour->size());
+	for(int j = 0; j < M_k; j++) {
+		// Get battery details for this node
+		int i = sub_tour->at(j).node_id;
+		double a, b, max_rate, c;
+		input->getTXParams_i(i, &a, &b, &max_rate, &c);
+
+		// Determine line equation to approximate TX rate curve
+		double y1 = max_rate;
+		double x1 = sqrt(a/(y1-b)-c);
+		double y2 = max_rate/2.0;
+		double x2 = sqrt(a/(y2-b)-c); // lookup
+		double m = (y2-y1)/(x2-x1);
+
+		if(DEBUG_CV_OPTMZR)
+			printf(" %d : a=%.2f, b=%.2f, max_rate=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n",i,a, b, max_rate, c,m,x1,y1);
+
+		model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
+		// Try something that is either q or not pwl
+	}
+}
+
+// /*
+// Helper Function for generating pwl constraints*/
+void COptimizer::GeneratePWLConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j){
+	// Use a PWL approximation
+	int M_k = boost::numeric_cast<int>(sub_tour->size());
+	for(int j = 0; j < M_k; j++) {
+		// Get battery details for this node
+		int node = sub_tour->at(j).node_id;
+		double a, b, max_rate, c;
+		input->getTXParams_i(node, &a, &b, &max_rate, &c);
+
+		// Compute points (D, R) of R = a/(D)^2 + b for some step length
+		double intv = 2.0;
+		double xmax = 150.0;
+		int len = (int) ceil((xmax-sqrt(a/(max_rate - b) - c))/intv) + 1;
+		std::cout << "!!!Length " << len << std::endl;
+		double* xpts = new double[len];
+		double* upts = new double[len];
+		xpts[0] = 0.0;
+		upts[0] = max_rate;
+		xpts[1] = sqrt(a/(max_rate - b) - c);
+		upts[1] = max_rate;
+		for(int i = 2; i < len; i++) {
+			xpts[i] = i*intv + xpts[1];
+			std::cout << "!!!xpts " << xpts[i] << std::endl;
+			upts[i] = std::min(a/(pow(xpts[i], 2) + c) + b, max_rate);
+			std::cout << "!!!upts " << upts[i] << std::endl;
+		}
+		std::cout << "!!!Parameters," << j << "," << a  << "," << b << "," << max_rate << "," << c << "\n";
+
+		model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), len, xpts, upts, "R_"+itos(j)+"_leq_math");
+	} 
+}
+
+/*
+Helper Function for generating lazy (adaptive cutting?) constraints*/
+void COptimizer::GenerateLazyConstraint(int l, GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j){
+	// Single linear approximation using lookup table
+	// Single linear approximation (fast!)
+	int M_k = boost::numeric_cast<int>(sub_tour->size());
+	for(int j = 0; j < M_k; j++) {
+		int node_id = sub_tour->at(j).node_id;
+		// Get battery details for this node
+		double a, b, max_rate, c;
+		input->getTXParams_i(node_id, &a, &b, &max_rate, &c);
+		// get node type (pi 3 or pi 4)
+		double node_type;
+		node_type = input->getNodeType_i(node_id);
+		// get packet size for this node
+		double q;
+		q = input->getQ_i(node_id);
+		// get velocity for this drone
+		double velocity;
+		velocity = input->getV_l(l);
+		// Use lookup table to get distance
+		double distance = input->lookup_distance(node_type, q, velocity);
+
+
+		// Determine line equation to approximate TX rate curve
+		// First two points are the saturated TX rate
+		double y1 = max_rate;
+		double x1 = sqrt(a/(y1-b)-c);
+		// Second two points 
+		// double x2 = sqrt(a/(y2-b)-c); // lookup
+		double x2 = distance;
+		// double y2 = max_rate/2.0;
+		double y2 = a/(pow(x2, 2) + c) + b;
+		// double m = (y2-y1)/(x2-x1);
+
+		int len = 2;
+		double* xpts = new double[len];
+		double* upts = new double[len];
+
+		xpts[0] = x1;
+		xpts[1] = x2;
+		upts[0] = y1;
+		upts[1] = y2;
+
+		double m = (y2-y1)/(x2-x1);
+
+
+		// if(DEBUG_CV_OPTMZR)
+			// printf(" %d : a=%.2f, b=%.2f, max_rate=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n", i, a, b, max_rate, c,m,x1,y1);
+
+		model.addQConstr(R_j.at(j) <= (m*(Dn_j.at(j) - x2) + y2), "R_"+itos(j)+"_leq_math");
+		// model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), 2, xpts, upts, "R_"+itos(j)+"_leq_math");
+	}
+}
 
 // Finds optimized hovering locations. Returns false if no solution found (hit drone energy limit)
 bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tour, bool aprx_tx_curve) {
@@ -172,112 +286,19 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 		switch (constraint_type)
 		{
 		case Constraint_tx_type::PWL:
-			// Use a PWL approximation
-			for(int j = 0; j < M_k; j++) {
-				// Get battery details for this node
-				int node = sub_tour->at(j).node_id;
-				double a, b, max_rate, c;
-				input->getTXParams_i(node, &a, &b, &max_rate, &c);
-
-				// Compute points (D, R) of R = a/(D)^2 + b for some step length
-				double intv = 2.0;
-				double xmax = 150.0;
-				int len = (int) ceil((xmax-sqrt(a/(max_rate - b) - c))/intv) + 1;
-				std::cout << "!!!Length " << len << std::endl;
-				double* xpts = new double[len];
-				double* upts = new double[len];
-				xpts[0] = 0.0;
-				upts[0] = max_rate;
-				xpts[1] = sqrt(a/(max_rate - b) - c);
-				upts[1] = max_rate;
-				for(int i = 2; i < len; i++) {
-					xpts[i] = i*intv + xpts[1];
-					std::cout << "!!!xpts " << xpts[i] << std::endl;
-					upts[i] = std::min(a/(pow(xpts[i], 2) + c) + b, max_rate);
-					std::cout << "!!!upts " << upts[i] << std::endl;
-				}
-				std::cout << "!!!Parameters," << j << "," << a  << "," << b << "," << max_rate << "," << c << "\n";
-
-				model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), len, xpts, upts, "R_"+itos(j)+"_leq_math");
-			} 
+			GeneratePWLConstraint(model, sub_tour, input, R_j, Dn_j);
 			break;
 
 		case Constraint_tx_type::LAZY:
-			// Single linear approximation using lookup table
-				for(int j = 0; j < M_k; j++) {
-					int node_id = sub_tour->at(j).node_id;
-					// Get battery details for this node
-					double a, b, max_rate, c;
-					input->getTXParams_i(node_id, &a, &b, &max_rate, &c);
-					// get node type (pi 3 or pi 4)
-					double node_type;
-					node_type = input->getNodeType_i(node_id);
-					// get packet size for this node
-					double q;
-					q = input->getQ_i(node_id);
-					// get velocity for this drone
-					double velocity;
-					velocity = input->getV_l(l);
-					// Use lookup table to get distance
-					double distance = input->lookup_distance(node_type, q, velocity);
-
-
-					// Determine line equation to approximate TX rate curve
-					// First two points are the saturated TX rate
-					double y1 = max_rate;
-					double x1 = sqrt(a/(y1-b)-c);
-					// Second two points 
-					// double x2 = sqrt(a/(y2-b)-c); // lookup
-					double x2 = distance;
-					// double y2 = max_rate/2.0;
-					double y2 = a/(pow(x2, 2) + c) + b;
-					// double m = (y2-y1)/(x2-x1);
-
-					int len = 2;
-					double* xpts = new double[len];
-					double* upts = new double[len];
-
-					xpts[0] = x1;
-					xpts[1] = x2;
-					upts[0] = y1;
-					upts[1] = y2;
-
-					double m = (y2-y1)/(x2-x1);
-
-
-					// if(DEBUG_CV_OPTMZR)
-						// printf(" %d : a=%.2f, b=%.2f, max_rate=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n", i, a, b, max_rate, c,m,x1,y1);
-
-					model.addQConstr(R_j.at(j) <= (m*(Dn_j.at(j) - x2) + y2), "R_"+itos(j)+"_leq_math");
-					// model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), 2, xpts, upts, "R_"+itos(j)+"_leq_math");
-				}
+			GenerateLazyConstraint(l, model, sub_tour, input, R_j, Dn_j);
 			break;
 
 		case Constraint_tx_type::SINGLE_APPROXIMATION:
-			// Single linear approximation (fast!)
-				for(int j = 0; j < M_k; j++) {
-					// Get battery details for this node
-					int i = sub_tour->at(j).node_id;
-					double a, b, max_rate, c;
-					input->getTXParams_i(i, &a, &b, &max_rate, &c);
-
-					// Determine line equation to approximate TX rate curve
-					double y1 = max_rate;
-					double x1 = sqrt(a/(y1-b)-c);
-					double y2 = max_rate/2.0;
-					double x2 = sqrt(a/(y2-b)-c); // lookup
-					double m = (y2-y1)/(x2-x1);
-
-					if(DEBUG_CV_OPTMZR)
-						printf(" %d : a=%.2f, b=%.2f, max_rate=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n",i,a, b, max_rate, c,m,x1,y1);
-
-					model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
-					// Try something that is either q or not pwl
-				}
+			GenerateSingleApproxConstraint(model, sub_tour, input, R_j, Dn_j);
 			break;
 		
 		default:
-			std::cout << "Unrecognized constratin tx type" << std::endl;
+			std::cout << "Unrecognized constraint tx type" << std::endl;
 			break;
 		}
 

@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 	Solver* solver = NULL;
 	Offline_Input input(argv[1]);
 	Solution solution(&input);
-	COptimizer cOptimizer(tx_curve_lazy);
+	COptimizer cOptimizer(Constraint_tx_type::LAZY);
 	TighteningHeuristic tHeuristic;
 	DummyHeuristic dHeuristic;
 

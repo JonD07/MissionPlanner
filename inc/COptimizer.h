@@ -46,6 +46,15 @@ public:
 	// Finds optimized hovering locations. Returns false if no solution found (hit drone energy limit)
 	bool ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tour, bool aprx_tx_curve = false);
 
+	//Generates Single Approximation constraint
+	void GenerateSingleApproxConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j);
+
+	//Generates Lazy constraint
+	void GenerateLazyConstraint(int l, GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j);
+
+	//Generates PWL (Piecewise linear) constraint
+	void GeneratePWLConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j);
+
 	//TODO Description once you know what it does
 	// callback_class callback_object;
 
