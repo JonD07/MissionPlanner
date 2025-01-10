@@ -6,7 +6,7 @@ import random
 exec_path = "../../build/mission-planner"
 exp1_path = "../Experiment1/"
 exp2_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/test/Experiment2/"
-exp3_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/test/Experiment4/"
+exp3_path = "/home/matt/Mines/pecs_lab/MissionPlanner/test/Experiment4/"
 
 NUM_PLOTS = 50
 
