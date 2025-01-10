@@ -266,7 +266,7 @@ double Input::getY_i(int i) {
 double Input::getZ_i(int i) {
 	// Range check..
 	if(i < 0 || i >= N) {
-		fprintf(stderr,"[ERROR:Input::getY_i] Bad index : %d\n", i);
+		fprintf(stderr,"[ERROR:Input::getZ_i] Bad index : %d\n", i);
 		exit(1);
 	}
 
@@ -277,7 +277,7 @@ double Input::getZ_i(int i) {
 double Input::getZs_i(int i) {
 	// Range check..
 	if(i < 0 || i >= N) {
-		fprintf(stderr,"[ERROR:Input::getZ_i] Bad index : %d\n", i);
+		fprintf(stderr,"[ERROR:Input::getZs_i] Bad index : %d\n", i);
 		exit(1);
 	}
 

@@ -6,7 +6,7 @@ import random
 exec_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/build/mission-planner"
 exp1_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/test/Experiment1/"
 exp2_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/test/Experiment2/"
-exp3_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/test/Experiment3/"
+exp3_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/test/Experiment4/"
 
 NUM_PLOTS = 50
 
@@ -56,77 +56,76 @@ def run_executable(alg, results_path, run_num):
 
 
 if __name__ == '__main__':
-	# Start with experiment 1 (increasing nodes)
-	for n in range(5,201, 5):
-		for i in range(NUM_PLOTS):
-			prepare_standard_scenario(exp1_path+f"plot_{n}_{i}.txt")
-			print(f"Experiment 1 on plot_{n}_{i}.txt")
-			# Run greedy
-			print(f"Running Greedy on plot_{n}_{i}.txt")
-			run_executable(1, exp1_path, i)
-			# Run our algorithm
-			print(f"Running VRP-CO on plot_{n}_{i}.txt")
-			run_executable(3, exp1_path, i)
-			# Run baseline
-			print(f"Running baseline on plot_{n}_{i}.txt")
-			run_executable(4, exp1_path, i)
-			# Run VRP only
-			print(f"Running VRP only on plot_{n}_{i}.txt")
-			run_executable(5, exp1_path, i)
-
-	# Run experiment 2 (increasing density)
-	for n in range(5, 151, 5):
-		for i in range(NUM_PLOTS):
-			prepare_standard_scenario(exp2_path + f"plot_{n}_{i}.txt")
-			print(f"Experiment 2 on plot_{n}_{i}.txt")
-			# Run greedy
-			print(f"Running Greedy on plot_{n}_{i}.txt")
-			run_executable(1, exp2_path, n)
-			# Run our algorithm
-			print(f"Running VRP-CO on plot_{n}_{i}.txt")
-			run_executable(3, exp2_path, n)
-			# Run baseline
-			print(f"Running baseline on plot_{n}_{i}.txt")
-			run_executable(4, exp2_path, n)
-			# Run VRP only
-			print(f"Running VRP only on plot_{n}_{i}.txt")
-			run_executable(5, exp2_path, n)
-
-	# Run experiment 1.5 (increasing drones)
-	n = 75
-	for m in range(1, 11):
-		for i in range(NUM_PLOTS):
-			prepare_inc_drone_scenario(exp1_path + f"plot_{n}_{i}.txt", m)
-			print(f"Experiment 1.5 on plot_{n}_{i}.txt")
-			# Run greedy
-			print(f"Running Greedy on plot_{n}_{i}.txt")
-			run_executable(1, exp1_path, i)
-			# Run our algorithm
-			print(f"Running VRP-CO on plot_{n}_{i}.txt")
-			run_executable(3, exp1_path, i)
-			# Run baseline
-			print(f"Running baseline on plot_{n}_{i}.txt")
-			run_executable(4, exp1_path, i)
-			# Run VRP only
-			print(f"Running VRP only on plot_{n}_{i}.txt")
-			run_executable(5, exp1_path, i)
+	# # Start with experiment 1 (increasing nodes)
+	# for n in range(5,201, 5):
+	# 	for i in range(NUM_PLOTS):
+	# 		prepare_standard_scenario(exp1_path+f"plot_{n}_{i}.txt")
+	# 		# Run greedy
+	# 		print(f"Experiment 1: Running Greedy on plot_{n}_{i}.txt")
+	# 		run_executable(1, exp1_path, i)
+	# 		# Run our algorithm
+	# 		print(f"Experiment 1: Running VRP-CO on plot_{n}_{i}.txt")
+	# 		run_executable(3, exp1_path, i)
+	# 		# Run baseline
+	# 		print(f"Experiment 1: Running baseline on plot_{n}_{i}.txt")
+	# 		run_executable(4, exp1_path, i)
+	# 		# Run VRP only
+	# 		print(f"Experiment 1: Running VRP only on plot_{n}_{i}.txt")
+	# 		run_executable(5, exp1_path, i)
+	#
+	# # Run experiment 2 (increasing density)
+	# for n in range(5, 151, 5):
+	# 	for i in range(NUM_PLOTS):
+	# 		prepare_standard_scenario(exp2_path + f"plot_{n}_{i}.txt")
+	# 		# Run greedy
+	# 		print(f"Experiment 2: Running Greedy on plot_{n}_{i}.txt")
+	# 		run_executable(1, exp2_path, n)
+	# 		# Run our algorithm
+	# 		print(f"Experiment 2: Running VRP-CO on plot_{n}_{i}.txt")
+	# 		run_executable(3, exp2_path, n)
+	# 		# Run baseline
+	# 		print(f"Experiment 2: Running baseline on plot_{n}_{i}.txt")
+	# 		run_executable(4, exp2_path, n)
+	# 		# Run VRP only
+	# 		print(f"Experiment 2: Running VRP only on plot_{n}_{i}.txt")
+	# 		run_executable(5, exp2_path, n)
+	#
+	# # Run experiment 1.5 (increasing drones)
+	# n = 75
+	# for m in range(1, 11):
+	# 	for i in range(NUM_PLOTS):
+	# 		prepare_inc_drone_scenario(exp1_path + f"plot_{n}_{i}.txt", m)
+	# 		# Run greedy
+	# 		print(f"Experiment 1.5: Running Greedy on plot_{n}_{i}.txt")
+	# 		run_executable(1, exp1_path, i)
+	# 		# Run our algorithm
+	# 		print(f"Experiment 1.5: Running VRP-CO on plot_{n}_{i}.txt")
+	# 		run_executable(3, exp1_path, i)
+	# 		# Run baseline
+	# 		print(f"Experiment 1.5: Running baseline on plot_{n}_{i}.txt")
+	# 		run_executable(4, exp1_path, i)
+	# 		# Run VRP only
+	# 		print(f"Experiment 1.5: Running VRP only on plot_{n}_{i}.txt")
+	# 		run_executable(5, exp1_path, i)
 
 	# Run experiment 3 (increasing data)
-	q = 0.0625
-	while q <= 1000:
+	q = 0.001
+	step_count = 0
+	while q <= 524.289:
 		for i in range(NUM_PLOTS):
-			prepare_standard_scenario(exp3_path + f"plot_{q}_{i}.txt")
-			print(f"Experiment 3 on plot_{q}_{i}.txt")
+			prepare_standard_scenario(exp3_path + f"plot_{step_count}_{i}.txt")
 			# Run greedy
-			print(f"Running Greedy on plot_{q}_{i}.txt")
-			run_executable(1, exp3_path, q)
+			print(f"Experiment 3: Running Greedy on plot_{step_count}_{i}.txt")
+			run_executable(1, exp3_path, step_count)
 			# Run our algorithm
-			print(f"Running VRP-CO on plot_{q}_{i}.txt")
-			run_executable(3, exp3_path, q)
+			print(f"Experiment 3: Running VRP-CO on plot_{step_count}_{i}.txt")
+			run_executable(3, exp3_path, step_count)
 			# Run baseline
-			print(f"Running baseline on plot_{q}_{i}.txt")
-			run_executable(4, exp3_path, q)
+			print(f"Experiment 3: Running baseline on plot_{step_count}_{i}.txt")
+			run_executable(4, exp3_path, step_count)
 			# Run VRP only
-			print(f"Running VRP only on plot_{q}_{i}.txt")
-			run_executable(5, exp3_path, q)
+			print(f"Experiment 3: Running VRP only on plot_{step_count}_{i}.txt")
+			run_executable(5, exp3_path, step_count)
 		q *= 2
+		step_count += 1
+
