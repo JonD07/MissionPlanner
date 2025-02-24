@@ -1,4 +1,5 @@
 #include "Input.h"
+#include <iostream>
 
 Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_path) {
 	// Initial assignment, silence annoying macro warnings
@@ -339,12 +340,17 @@ Node* Input::getNode_i(int i) {
 	return vNodeLst.at(i);
 }
 
-double Input::lookup_distance(int node_type, double velocity, double q_size) {
-	// We will round everything down
-	//use sizeof to clean up these hardcoded constants. Explanation of these numbers is in input.h
-	uint8_t velocity_index = (velocity / 4) - 1;
-	int q_size_index = int( (log(q_size) - log(.001)) / log(1.189207115));
-	return distance_lookup_table[node_type][velocity_index][q_size_index];
-}
+// double Input::lookup_distance(int node_type, double q_size, double velocity) {
+// 	// We will round everything down
+// 	//use sizeof to clean up these hardcoded constants. Explanation of these numbers is in input.h
+// 	int velocity_index = (velocity / 4) - 1;
+// 	int q_size_index = int( (log(q_size) - log(.001)) / log(1.189207115));
+// 	std::cout << "!!!vel_index " << velocity_index << std::endl;
+// 	std::cout << "!!!vel " << velocity << std::endl;
+// 	std::cout << "!!!q_size_index " << q_size_index << std::endl;
+// 	std::cout << "!!!q_size " << q_size << std::endl;
+// 	std::cout << "!!!node_type " << node_type << std::endl;
+// 	return distance_lookup_table[node_type][velocity_index][q_size_index];
+// }
 
 

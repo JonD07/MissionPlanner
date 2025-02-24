@@ -35,7 +35,8 @@
 enum Constraint_tx_type{
 	SINGLE_APPROXIMATION = 0,  //Single line approximation from lookup table
 	PWL,                       //Piecewise linear constraints
-	LAZY                       //Lazy constraint (TODO rename this to something more accurate.)
+	LAZY,                       //Lazy constraint (TODO rename this to something more accurate.)
+	INVERSE_SQUARE				//Uses the full inverse square law constraint
 };
 
 
@@ -55,10 +56,25 @@ public:
 	//Generates PWL (Piecewise linear) constraint
 	void GeneratePWLConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j);
 
-	//TODO Description once you know what it does
-	// callback_class callback_object;
+	// // Helper function for directly solving the nonconvex problem
+	void GenerateInverseSquareConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j, std::vector<GRBVar> D2n_j);
 
+	// Lookup distance
+	double lookup_distance(int node_type, double q_size, double velocity);
+
+	// Distance lookup table array for data_size and air speed to optimal distance approximation
+	// distance_lookup[node_type][velocity][data_size]
+	// node_type := pi3, pi4
+	const static uint16_t NUM_NODE_TYPES = 2;
+	// velocity := 2-20 [m/s] in increments of 1 m/s
+	const static uint16_t NUM_VELOCITY_MEASUREMENTS = 19;
+	// packet_size := .001 * eighth_root(2)^index [MB]
+	const static uint16_t NUM_DATA_PACKAGE_SIZES = 160;
+	// For example, the final entry for packet size is .001 * (1.09050773267)^159 = 961.5484322722301 MB
+	double pi_q_vs_distance_lookup[NUM_NODE_TYPES][NUM_VELOCITY_MEASUREMENTS][NUM_DATA_PACKAGE_SIZES];
 protected:
 private:
 	Constraint_tx_type constraint_type;
+
+
 };

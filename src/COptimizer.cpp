@@ -1,12 +1,96 @@
 #include "COptimizer.h"
-// #include "COptimizer_callback.h"
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <sstream>
+#include <string>
 
 
 /*
 //  * Convex optimization approach to improving sub-tours. The pwa_flag tells the solver to use
 //  * a piece-wise approximation of the TX curve (this is NOT convex).
 //  */
-COptimizer::COptimizer(Constraint_tx_type constraint_type) : constraint_type(constraint_type) {}
+COptimizer::COptimizer(Constraint_tx_type constraint_type) : constraint_type(constraint_type) {
+
+	// Here we populate the lookup table. Is there any issue with setting this at runtime?
+
+	std::cout << "Initializing variables" << std::endl;
+	std::vector<std::vector<double>> pi3_data, pi4_data;
+	std::ifstream file_3("../../inc/pi_3_q_vs_distance.csv");
+    std::ifstream file_4("../../inc/pi_4_q_vs_distance.csv");
+    std::string line_3, line_4;
+
+	std::cout << "Parsing files" << std::endl;
+
+	uint16_t rowIdx = 0;
+    while (getline(file_3, line_3)) {
+        std::stringstream ss(line_3);
+        std::string cell;
+		uint16_t colIdx = 0;
+        
+        while (getline(ss, cell, ',')) {
+            pi_q_vs_distance_lookup[0][rowIdx][colIdx] = std::stod(cell);
+			colIdx ++;
+        }
+		rowIdx ++;
+    }
+	std::cout << "pi data parsed!" << std::endl;
+
+	rowIdx = 0;
+    while (getline(file_4, line_4)) {
+        std::stringstream ss(line_4);
+        std::string cell;
+		uint16_t colIdx = 0;
+        
+        while (getline(ss, cell, ',')) {
+            pi_q_vs_distance_lookup[1][rowIdx][colIdx] = std::stod(cell);
+			colIdx ++;
+        }
+		rowIdx ++;
+    }
+
+	for(uint16_t i = 0; i < NUM_NODE_TYPES; i++){
+		for(uint16_t j = 0; j < NUM_VELOCITY_MEASUREMENTS; j++){
+			for(uint16_t k = 0; k < NUM_DATA_PACKAGE_SIZES; k++){
+				std::cout << pi_q_vs_distance_lookup[i][j][k] << std::endl;
+			}
+		}
+	}
+
+	// while (getline(file_4, line_4)) {
+    //     std::stringstream ss(line_4);
+    //     std::string cell;
+    //     std::vector<double> row;
+        
+    //     while (getline(ss, cell, ',')) {
+    //         row.push_back(std::stod(cell));
+    //     }
+    //     pi4_data.push_back(row);
+    // }
+
+	std::cout << "Copying" << std::endl;
+	std::cout << "pi3_data start: " << &pi3_data + 1<< std::endl;
+	std::cout << "pi3_data end: " << &pi3_data + sizeof(double)*NUM_DATA_PACKAGE_SIZES*NUM_VELOCITY_MEASUREMENTS << std::endl;
+	std::cout << "difference: " << &pi3_data - (&pi3_data + sizeof(double)*NUM_DATA_PACKAGE_SIZES*NUM_VELOCITY_MEASUREMENTS) << std::endl;
+	// std::cout << "pi lookup: " << &pi_q_vs_distance_lookup << std::endl;
+
+	// std::cout << "begin: " << pi3_data.begin() << std::endl;
+	// std::cout << "end: " << pi3_data.end() << std::endl;
+
+	// std::copy(pi3_data.begin(), pi3_data.end(), &pi_q_vs_distance_lookup[0]);
+	// std::copy(&pi4_data, &pi4_data + NUM_VELOCITY_MEASUREMENTS * NUM_DATA_PACKAGE_SIZES, &pi_q_vs_distance_lookup[1]);
+
+	// std::cout << "Copied" << std::endl;
+}
+double COptimizer::lookup_distance(int node_type, double q_size, double velocity) {
+// 	// We will round everything down
+// 	//use sizeof to clean up these hardcoded constants. Explanation of these numbers is in input.h
+	int velocity_index = velocity - 2;
+	int q_size_index = int( (log(q_size) - log(.001)) / log(1.09050773267));
+	// double distance = pi_q_vs_distance_lookup.get(node_type).get(q_size_index).get(velocity_index);
+	double distance = pi_q_vs_distance_lookup[node_type][velocity_index][q_size_index];
+	return distance;
+}
 
 /*
 Helper Function for generating single approximation (the simple ones) constraints */
@@ -72,7 +156,6 @@ void COptimizer::GeneratePWLConstraint(GRBModel &model, std::vector<Point>* sub_
 Helper Function for generating lazy (adaptive cutting?) constraints*/
 void COptimizer::GenerateLazyConstraint(int l, GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j){
 	// Single linear approximation using lookup table
-	// Single linear approximation (fast!)
 	int M_k = boost::numeric_cast<int>(sub_tour->size());
 	for(int j = 0; j < M_k; j++) {
 		int node_id = sub_tour->at(j).node_id;
@@ -89,7 +172,14 @@ void COptimizer::GenerateLazyConstraint(int l, GRBModel &model, std::vector<Poin
 		double velocity;
 		velocity = input->getV_l(l);
 		// Use lookup table to get distance
-		double distance = input->lookup_distance(node_type, q, velocity);
+		double distance = lookup_distance(node_type, q, velocity);
+
+		int i = sub_tour->at(j).node_id;
+		double Zs_i = input->getZs_i(i);
+
+		if (distance < Zs_i){
+			distance = Zs_i;
+		}
 
 
 		// Determine line equation to approximate TX rate curve
@@ -115,18 +205,46 @@ void COptimizer::GenerateLazyConstraint(int l, GRBModel &model, std::vector<Poin
 		double m = (y2-y1)/(x2-x1);
 
 
-		// if(DEBUG_CV_OPTMZR)
+		if(DEBUG_CV_OPTMZR){
+			// std::cout << "!!! m " << m << std::endl;
+			std::cout << "!!! max_rate " << max_rate << std::endl;
+			std::cout << "!!! new_rate " << y2 << std::endl;
+			std::cout << "!!! lookup_value " << distance << std::endl;
 			// printf(" %d : a=%.2f, b=%.2f, max_rate=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n", i, a, b, max_rate, c,m,x1,y1);
-
+		}
 		model.addQConstr(R_j.at(j) <= (m*(Dn_j.at(j) - x2) + y2), "R_"+itos(j)+"_leq_math");
 		// model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), 2, xpts, upts, "R_"+itos(j)+"_leq_math");
 	}
 }
 
+// /*
+// Helper function for directly solving the inverse square law convex constraint*/
+void COptimizer::GenerateInverseSquareConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j, std::vector<GRBVar> D2n_j){
+	int M_k = boost::numeric_cast<int>(sub_tour->size());
+	for(int j = 0; j < M_k; j++) {
+		int node_id = sub_tour->at(j).node_id;
+		// Get battery details for this node
+		double a, b, max_rate, c;
+		input->getTXParams_i(node_id, &a, &b, &max_rate, &c);
+		// get node type (pi 3 or pi 4)
+		// double node_type;
+		// node_type = input->getNodeType_i(node_id);
+		
+		// int i = sub_tour->at(j).node_id;
+		// double Zs_i = input->getZs_i(i);
+
+		// GRBVar D_2 = Dn_j.at(j) * Dn_j.at(j);
+		// GRBQuadExpr quadExpr =  R_j.at(j) * D_2 - D_2*b + R_j.at(j)*c - b*c;
+		model.addQConstr( (R_j.at(j) - b) * (D2n_j.at(j) + c), GRB_EQUAL, a, "R_"+itos(j)+"_eq_math");
+
+		// This constraint handles the square of Di_j
+		model.addQConstr( D2n_j.at(j), GRB_EQUAL, Dn_j.at(j)*Dn_j.at(j));
+}
+}
+
 // Finds optimized hovering locations. Returns false if no solution found (hit drone energy limit)
 bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tour, bool aprx_tx_curve) {
 	// aprx_tx_curve |= pwa_tx_curve;
-
 	int M_k = boost::numeric_cast<int>(sub_tour->size());
 	try {
 		//
@@ -141,6 +259,9 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 			model.set(GRB_DoubleParam_TimeLimit, 500.0);
 		} else if(constraint_type == Constraint_tx_type::LAZY){
 			model.set(GRB_IntParam_LazyConstraints, 1);
+		} else if(constraint_type == Constraint_tx_type::INVERSE_SQUARE){
+			model.set(GRB_IntParam_NonConvex, 2);
+			model.set(GRB_DoubleParam_TimeLimit, 500.0);
 		}
 
 		if(DEBUG_CV_OPTMZR) {
@@ -206,9 +327,12 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 
 		// Create distance node_i -> wp_i variables
 		std::vector<GRBVar> Dn_j;
+		std::vector<GRBVar> D2n_j;
 		for(int j = 0; j < M_k; j++) {
 			// Distance from node i to waypoint i
 			GRBVar d = model.addVar(0.1, GRB_INFINITY, 0.0, GRB_CONTINUOUS,  "dn_" + itos(j));
+			GRBVar d2 = model.addVar(0.0, GRB_INFINITY, 0.0, GRB_CONTINUOUS,  "d2n_" + itos(j));
+			D2n_j.push_back(d2);
 			Dn_j.push_back(d);
 		}
 
@@ -296,6 +420,9 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 		case Constraint_tx_type::SINGLE_APPROXIMATION:
 			GenerateSingleApproxConstraint(model, sub_tour, input, R_j, Dn_j);
 			break;
+
+		case Constraint_tx_type::INVERSE_SQUARE:
+			GenerateInverseSquareConstraint(model, sub_tour, input, R_j, Dn_j, D2n_j);
 		
 		default:
 			std::cout << "Unrecognized constraint tx type" << std::endl;

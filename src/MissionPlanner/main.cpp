@@ -87,7 +87,9 @@ int main(int argc, char *argv[]) {
 	Solver* solver = NULL;
 	Offline_Input input(argv[1]);
 	Solution solution(&input);
+	std::cout << "Initializing COptimizer" << std::endl;
 	COptimizer cOptimizer(Constraint_tx_type::LAZY);
+	std::cout << "Optimizer Initialized" << std::endl;
 	TighteningHeuristic tHeuristic;
 	DummyHeuristic dHeuristic;
 

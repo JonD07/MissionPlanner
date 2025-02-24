@@ -49,11 +49,13 @@ def get_rnd_node():
 		
 # TODO Move this to bottom of file so constants are in same order.
 if DATA_SIZE_VS_DISTANCE_TEST:
-	FILE_PATH = "test/data_velocity_test/"
+	FILE_PATH = "data_velocity_test/"
 	# # Loop over the number of sensors to use (n)
 	# for n in range(START_COUNT, END_COUNT):
 	# 	# Generate NUM_PLOTS plots
-	MAX_Q_FACTOR = 80
+	# MAX_Q_FACTOR = 80
+	# Now trying with 160
+	MAX_Q_FACTOR = 160
 	BASE_PACKET_SIZE = 0.001
 	# for i in range(MAX_Q_FACTOR):
 	# Open the file
@@ -69,9 +71,10 @@ if DATA_SIZE_VS_DISTANCE_TEST:
 			y = 100
 			z = 10
 			z_s = 0
-			q = BASE_PACKET_SIZE* 1.189207115 **power_of_two
+			# q = BASE_PACKET_SIZE* 1.189207115 **power_of_two
+			q = BASE_PACKET_SIZE* 1.09050773267 **power_of_two
 			# Write the results to file for pi 4
-			file.write(f"{x} {y} {z} {z_s} {q} "+ "1 127.0.0.1"+"\n")
+			file.write(f"{x} {y} {z} {z_s} {q} "+ "0 127.0.0.1"+"\n")
 			# Pick base station
 			x_b = 0
 			y_b = 0
