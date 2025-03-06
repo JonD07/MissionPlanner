@@ -4,10 +4,10 @@ import random
 import io
 
 # Path to the C++ executable
-exec_path = "/home/matt/Mines/pecs_lab/MissionPlanner/build/mission-planner"
+exec_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/build/mission-planner"
 exp1_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/test/Experiment1/"
 exp2_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/test/Experiment2/"
-exp3_path = "/home/matt/Mines/pecs_lab/MissionPlanner/test/Experiment4/"
+exp3_path = "/home/jonathan/Research/HolisticFramework/MissionPlanner/test/Experiment4/"
 
 NUM_PLOTS = 50
 
@@ -51,12 +51,6 @@ def run_executable(alg, results_path, run_num):
 	# scenario-file alg plan-flag results-flag results-path run-num
 	process = subprocess.Popen([exec_path, 'scenario_run.txt', str(alg), '0', '1', results_path, str(run_num)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	stdout, stderr = process.communicate()  # Waits for the executable to finish
-	formatted_stdout = io.BytesIO(stdout).readlines()
-
-	for line in formatted_stdout:
-		# print(line.decode())
-		if "!!!" in line.decode():
-			print(line.decode())
 	if stderr:
 		print(f"Error:\n{stderr.decode()}")
 

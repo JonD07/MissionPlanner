@@ -32,10 +32,10 @@
 #define CONST_RELAXATION(X)		X,X+0.1
 
 // To easily adjust code for new constraint types
-enum Constraint_tx_type{
-	SINGLE_APPROXIMATION = 0,  //Single line approximation from lookup table
-	PWL,                       //Piecewise linear constraints
-	LAZY,                       //Lazy constraint (TODO rename this to something more accurate.)
+enum Constraint_tx_type {
+	SINGLE_APPROXIMATION = 0,	//Single line approximation from lookup table
+	PWL,						//Piecewise linear constraints
+	TABULAR_CUT,				//Lazy constraint (TODO rename this to something more accurate.)
 	INVERSE_SQUARE				//Uses the full inverse square law constraint
 };
 
@@ -48,16 +48,16 @@ public:
 	bool ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tour, bool aprx_tx_curve = false);
 
 	//Generates Single Approximation constraint
-	void GenerateSingleApproxConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j);
+	void GenerateSingleApproxConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar>* R_j, std::vector<GRBVar>* Dn_j);
 
 	//Generates Lazy constraint
-	void GenerateLazyConstraint(int l, GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j);
+	void GenerateLazyConstraint(int l, GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar>* R_j, std::vector<GRBVar>* Dn_j);
 
 	//Generates PWL (Piecewise linear) constraint
-	void GeneratePWLConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j);
+	void GeneratePWLConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar>* R_j, std::vector<GRBVar>* Dn_j);
 
 	// // Helper function for directly solving the nonconvex problem
-	void GenerateInverseSquareConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar> R_j, std::vector<GRBVar> Dn_j, std::vector<GRBVar> D2n_j);
+	void GenerateInverseSquareConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar>* R_j, std::vector<GRBVar>* Dn_j, std::vector<GRBVar>* D2n_j);
 
 	// Lookup distance
 	double lookup_distance(int node_type, double q_size, double velocity);
@@ -70,7 +70,7 @@ public:
 	const static uint16_t NUM_VELOCITY_MEASUREMENTS = 19;
 	// packet_size := .001 * eighth_root(2)^index [MB]
 	const static uint16_t NUM_DATA_PACKAGE_SIZES = 160;
-	// For example, the final entry for packet size is .001 * (1.09050773267)^159 = 961.5484322722301 MB
+	// For example, the final entry for packet size is 0.001 * 2^(159/8) = 961.548431607 MB
 	double pi_q_vs_distance_lookup[NUM_NODE_TYPES][NUM_VELOCITY_MEASUREMENTS][NUM_DATA_PACKAGE_SIZES];
 protected:
 private:

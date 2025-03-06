@@ -84,8 +84,6 @@ public:
 	double getZ_b() { return mBaseStation.fZ + START_AGL; }
 	// Get the z-coordinate of the base station (this is the ground-z)
 	double getZ_bg() { return mBaseStation.fZ; }
-	// Lookup and return distance for a given node type, q_size, velocity combination
-	// double lookup_distance(int node_type, double q_size, double velocity);
 	// Get a pointer to node i
 	Node* getNode_i(int i);
 
@@ -119,14 +117,4 @@ protected:
 	BaseStation mBaseStation;
 
 private:
-	// TODO Maybe put this in a separate file for constants or something.
-	
-	
-	// Distance lookup table array for packet based distance strategy
-	// distance_lookup[node_type][velocity][packet_size]
-	// node_type := pi3, pi4
-	// velocity := 4, 8, 12, 16, 20 [m/s]
-	// packet_size := .001 * fourth_root(2)^index [MB]
-	// For example, the final entry for packet size is .001 * (1.189207115)^80 = 881.743799361698 MB
-	// const double distance_lookup_table[2][5][80];
 };

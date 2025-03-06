@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 	Offline_Input input(argv[1]);
 	Solution solution(&input);
 	std::cout << "Initializing COptimizer" << std::endl;
-	COptimizer cOptimizer(Constraint_tx_type::LAZY);
+	COptimizer cOptimizer(Constraint_tx_type::TABULAR_CUT);
 	std::cout << "Optimizer Initialized" << std::endl;
 	TighteningHeuristic tHeuristic;
 	DummyHeuristic dHeuristic;
@@ -172,7 +172,6 @@ int main(int argc, char *argv[]) {
 		fprintf(pOutputFile, "%f ", input.getQ_i(0));
 		// Print if this is a valid solution
 		fprintf(pOutputFile, "%d ", solution.ValidSolution(true));
-		
 
 		if(PRINT_SUBTOURS) {
 			// Grab sub-tour times
