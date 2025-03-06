@@ -25,7 +25,7 @@
 #include "TourImprover.h"
 
 
-#define DEBUG_SLVR_VRP		DEBUG || 1
+#define DEBUG_SOLVER_VRP		DEBUG || 1
 
 
 class Solver_VRP : public Solver {

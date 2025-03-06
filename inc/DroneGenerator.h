@@ -28,8 +28,9 @@ public:
 	DroneGenerator(std::string data_path);
 	virtual ~DroneGenerator();
 
-	// Takes in a node string and returns a node. The string is expected to be in this format:
-	//  x_1 y_1 z_1 zs_1 q_1 t_1
+	// Takes in a Drone string and returns a drone. The string is expected to be in this format:
+	//  TODO (I think this needs to change): x_1 y_1 z_1 zs_1 q_1 t_1
+	
 	Drone* GenerateDrone(int type, double usable_speed = -1, double bat_share = -1);
 private:
 	// List of node parameters

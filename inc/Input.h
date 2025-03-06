@@ -102,6 +102,7 @@ protected:
 
 	// The rest of the input
 	std::vector<std::string> scenario_data;
+	
 
 	// Number of nodes
 	int N;

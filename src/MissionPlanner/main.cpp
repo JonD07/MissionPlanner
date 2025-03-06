@@ -39,6 +39,8 @@ enum {
 	e_Algo_BL_NO_IMPRV = 5,
 };
 
+
+
 int main(int argc, char *argv[]) {
 	// Run parameters
 	int algorithm = 0;
@@ -85,7 +87,9 @@ int main(int argc, char *argv[]) {
 	Solver* solver = NULL;
 	Offline_Input input(argv[1]);
 	Solution solution(&input);
-	COptimizer cOptimizer(false);
+	std::cout << "Initializing COptimizer" << std::endl;
+	COptimizer cOptimizer(Constraint_tx_type::TABULAR_CUT);
+	std::cout << "Optimizer Initialized" << std::endl;
 	TighteningHeuristic tHeuristic;
 	DummyHeuristic dHeuristic;
 
@@ -162,7 +166,7 @@ int main(int argc, char *argv[]) {
 		if(SANITY_PRINT)
 			printf(" Printing results to: %s\n", buff);
 		pOutputFile = fopen(buff, "a");
-		// File format: n m runmun computed_Z estimated_Z comp-time
+		// File format: n m runnum Objective comp-time data_size
 		fprintf(pOutputFile, "%d %d %d ", input.getN(), input.getM(), run_number);
 		fprintf(pOutputFile, "%.10f %f ", result, duration_s);
 		fprintf(pOutputFile, "%f ", input.getQ_i(0));

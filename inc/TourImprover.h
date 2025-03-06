@@ -168,7 +168,7 @@ public:
 	TourImprover();
 	virtual ~TourImprover();
 
-	// Used to improve a sub-tour
+	// Used to improve a sub-tour  TODO: Remove this flag... we don't really use it
 	virtual bool ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tour, bool additional_flag = false) = 0;
 
 protected:
