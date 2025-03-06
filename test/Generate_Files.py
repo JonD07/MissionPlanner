@@ -1,11 +1,13 @@
 import random
 import math
+from MAVProxy.modules.mavproxy_map import srtm
 
 INC_NODES = False
 INC_ALPHA = False
 INC_DATA = False
 FW_TEST = False
-DATA_SIZE_VS_DISTANCE_TEST = True	# Vary data size for one node
+DATA_SIZE_VS_DISTANCE_TEST = False	# Vary data size for one node
+DUMMY = False
 
 # Z coordinate range
 Z_MIN = -10
@@ -15,7 +17,7 @@ Q_MIN = 0.001
 Q_MAX = 16.384
 
 # Parameters
-NUM_PLOTS = 50
+NUM_PLOTS = 1
 
 # Increasing nodes
 START_COUNT = 1
@@ -23,6 +25,8 @@ END_COUNT = 2
 Node_Increment = 5
 # 75 per km^2
 ALPHA = 0.000075
+# 75 per km^2
+FW_ALPHA = 0.000015
 
 # Increasing alpha
 NUM_NODES = 50
@@ -32,8 +36,41 @@ DENSE_INC = 5
 
 # Increasing Q
 START_Q = 0.001
-END_Q = 16384 * 2**3
+END_Q = 524.289
 Q_INC_FACTOR = 2
+
+# Base location
+BASE_GPS = (39.739550, -105.222467)  # Latitude, Longitude
+BASE_XYZ = (0, 0, 0)  # x, y, z relative coordinates
+
+# Other constants
+r_earth = 6378000
+
+
+def get_lat_lon(relative_x, relative_y):
+	new_latitude = BASE_GPS[0] + (relative_y / r_earth) * (180 / math.pi)
+	new_longitude = BASE_GPS[1] + (relative_x / r_earth) * (180 / math.pi) / math.cos(BASE_GPS[0] * math.pi/180)
+	return (new_latitude, new_longitude)
+
+
+def get_altitude(x, y):
+	# Get the lat,long of this position
+	lat_long = get_lat_lon(x, y)
+	# Get the SRTM tile
+	downloader = srtm.SRTMDownloader()
+	downloader.loadFileList()
+	tile = downloader.getTile(int(math.floor(lat_long[0])), int(math.floor(lat_long[1])))
+	# Return altitude from the tile
+	return tile.getAltitudeFromLatLon(lat_long[0], lat_long[1])
+
+
+def get_relative_z(x, y):
+	# Get the altitude of the base
+	base_alt = get_altitude(BASE_XYZ[0], BASE_XYZ[1])
+	# Get the altitude at this x,y position
+	point_alt = get_altitude(x, y)
+	# Return differance (plus base)
+	return point_alt - (base_alt + BASE_XYZ[2])
 
 
 def get_rnd_node():
@@ -81,6 +118,11 @@ if DATA_SIZE_VS_DISTANCE_TEST:
 			z_b = 0
 			# Record Base Station (BS?) position
 			file.write(f"0 0 0\n")
+
+def get_rnd_q():
+	factor = random.choice(list(range(0, 16)))
+	return START_Q*2**factor
+
 
 # What increases?
 if INC_NODES:
@@ -146,9 +188,10 @@ if INC_ALPHA:
 				file.write(f"{x_b} {y_b} {y_b}\n")
 
 if INC_DATA:
-	FILE_PATH = "Experiment3/"
+	FILE_PATH = "Experiment4/"
 	# Gradually increase q
 	q = START_Q
+	step_count = 0
 	# for q in range(START_Q, (END_Q + DENSE_Q), Q_INC):
 	while q <= END_Q:
 		# Find the max distance a sensor can from the origin
@@ -157,7 +200,7 @@ if INC_DATA:
 		# Generate NUM_PLOTS plots
 		for i in range(NUM_PLOTS):
 			# Open the file
-			file_name = f"{FILE_PATH}plot_{q}_{i}.txt"
+			file_name = f"{FILE_PATH}plot_{step_count}_{i}.txt"
 			with open(file_name, 'w') as file:
 				file.write(f"{NUM_NODES}\n")
 				for l in range(NUM_NODES):
@@ -176,6 +219,7 @@ if INC_DATA:
 				# Record BS position
 				file.write(f"{x_b} {y_b} {y_b}\n")
 		q = q * Q_INC_FACTOR
+		step_count += 1
 
 if FW_TEST:
 	FILE_PATH = "FW_Test/"
@@ -184,7 +228,7 @@ if FW_TEST:
 		# Generate NUM_PLOTS plots
 		for i in range(20):
 			# Find the max distance a sensor can from the origin
-			MAX_COORD = math.sqrt(n/ALPHA)
+			MAX_COORD = math.sqrt(n/FW_ALPHA)
 			# Open the file
 			file_name = f"{FILE_PATH}plot_{n}_{i}.txt"
 			with open(file_name, 'w') as file:
@@ -195,10 +239,39 @@ if FW_TEST:
 					# Pick random coordinates
 					x = MAX_COORD * random.random() - MAX_COORD/2
 					y = MAX_COORD * random.random() - MAX_COORD/2
-					z = 30 * random.random()
-					z_s = random.choice([8.0, 10, 15])
-					q = (10.0 - 0.5) * random.random() + 0.5
+					z = get_relative_z(x, y)
+					z_s = random.choice(list(range(8, 20, 2)))
+					q = get_rnd_q()
 					# Write the results to file
 					file.write(f"{x} {y} {z} {z_s} {q} "+get_rnd_node()+"\n")
 				# Record BS position
-				file.write(f"0 0 0\n")
+				file.write(f"{BASE_XYZ[0]} {BASE_XYZ[1]} {BASE_XYZ[2]}\n")
+
+if DUMMY:
+	# Open the file
+	with open("FW_Test/dummy_.txt", 'w') as file:
+		# Number of nodes
+		file.write(f"4\n")
+		for l in range(4):
+			# For each node: x y z z_s Q(Mb) type ip-adrs
+			# Pick random coordinates
+			if l == 0:
+				x = 300
+				y = 300
+			elif l == 1:
+				x = 300
+				y = -300
+			elif l == 2:
+				x = -300
+				y = -300
+			elif l == 3:
+				x = -300
+				y = 300
+			z = get_relative_z(x, y)
+			z_s = 8
+			q = 32.0
+			# Write the results to file
+			file.write(f"{x} {y} {z} {z_s} {q} " + get_rnd_node() + "\n")
+		# Record BS position
+		file.write(f"{BASE_XYZ[0]} {BASE_XYZ[1]} {BASE_XYZ[2]}\n")
+
