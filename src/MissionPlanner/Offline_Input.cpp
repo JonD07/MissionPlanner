@@ -73,7 +73,7 @@ Offline_Input::Offline_Input(std::string scenario_input_path) : Input(scenario_i
 	}
 	else {
 		if(SANITY_PRINT)
-			printf("Successfully read input\n\n");
+			printf("Successfully read input\n");
 	}
 }
 

@@ -11,55 +11,17 @@
  * a piece-wise approximation of the TX curve (this is NOT convex).
  */
 COptimizer::COptimizer(Constraint_tx_type constraint_type) : constraint_type(constraint_type) {
-	// Here we populate the lookup table. Is there any issue with setting this at runtime?
-	if(DEBUG_CV_OPTMZR) {
-		std::cout << "Initializing variables" << std::endl;
-	}
-
-	std::ifstream file_3("../../inc/pi_3_q_vs_distance.csv");
-	std::ifstream file_4("../../inc/pi_4_q_vs_distance.csv");
-	std::string line_3, line_4;
-
-	if(DEBUG_CV_OPTMZR) {
-		std::cout << "Parsing files" << std::endl;
-	}
-
-	uint16_t rowIdx = 0;
-	while (getline(file_3, line_3)) {
-		std::stringstream ss(line_3);
-		std::string cell;
-		uint16_t colIdx = 0;
-
-		while (getline(ss, cell, ',')) {
-			pi_q_vs_distance_lookup[0][rowIdx][colIdx] = std::stod(cell);
-			colIdx ++;
-		}
-		rowIdx ++;
-	}
-
-	if(DEBUG_CV_OPTMZR) {
-		std::cout << "pi data parsed!" << std::endl;
-	}
-
-	rowIdx = 0;
-	while (getline(file_4, line_4)) {
-		std::stringstream ss(line_4);
-		std::string cell;
-		uint16_t colIdx = 0;
-
-		while (getline(ss, cell, ',')) {
-			pi_q_vs_distance_lookup[1][rowIdx][colIdx] = std::stod(cell);
-			colIdx ++;
-		}
-		rowIdx ++;
-	}
+	if(SANITY_PRINT)
+		printf("Hello from COptimizer!\n");
 
 	if(DEBUG_CV_OPTMZR) {
 		for(uint16_t i = 0; i < NUM_NODE_TYPES; i++){
+			printf("Node Type: %d\n", i);
 			for(uint16_t j = 0; j < NUM_VELOCITY_MEASUREMENTS; j++){
 				for(uint16_t k = 0; k < NUM_DATA_PACKAGE_SIZES; k++){
-					std::cout << pi_q_vs_distance_lookup[i][j][k] << std::endl;
+					printf("%f ", pi_q_vs_distance_lookup[i][j][k]);
 				}
+				puts("");
 			}
 		}
 	}
@@ -115,10 +77,6 @@ void COptimizer::GeneratePWLConstraint(GRBModel &model, std::vector<Point>* sub_
 		double xmax = 150.0;
 		int len = (int) ceil((xmax-sqrt(a/(max_rate - b) - c))/intv) + 1;
 
-		if(DEBUG_CV_OPTMZR) {
-			std::cout << "!!!Length " << len << std::endl;
-		}
-
 		double* xpts = new double[len];
 		double* upts = new double[len];
 		xpts[0] = 0.0;
@@ -128,15 +86,6 @@ void COptimizer::GeneratePWLConstraint(GRBModel &model, std::vector<Point>* sub_
 		for(int i = 2; i < len; i++) {
 			xpts[i] = i*intv + xpts[1];
 			upts[i] = std::min(a/(pow(xpts[i], 2) + c) + b, max_rate);
-
-			if(DEBUG_CV_OPTMZR) {
-				std::cout << "!!!xpts " << xpts[i] << std::endl;
-				std::cout << "!!!upts " << upts[i] << std::endl;
-			}
-		}
-
-		if(DEBUG_CV_OPTMZR) {
-			std::cout << "!!!Parameters," << j << "," << a  << "," << b << "," << max_rate << "," << c << "\n";
 		}
 
 		model.addGenConstrPWL(Dn_j->at(j), R_j->at(j), len, xpts, upts, "R_"+itos(j)+"_leq_math");
@@ -187,11 +136,6 @@ void COptimizer::GenerateLazyConstraint(int l, GRBModel &model, std::vector<Poin
 		if(x2 > x1) {
 			// Add constraint using point-slope formula
 			double m = (y2-y1)/(x2-x1);
-			if(DEBUG_CV_OPTMZR){
-				std::cout << "!!! max_rate " << max_rate << std::endl;
-				std::cout << "!!! new_rate " << y2 << std::endl;
-				std::cout << "!!! lookup_value " << distance << std::endl;
-			}
 
 			model.addConstr(R_j->at(j) <= (m*(Dn_j->at(j) - x2) + y2), "R_"+itos(j)+"_leq_math");
 		}
@@ -228,7 +172,7 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 		/// Create an environment
 		//
 		GRBEnv env = GRBEnv(true);
-		env.set("LogFile", "mip1.log");
+//		env.set("LogFile", "mip1.log");
 		env.start();
 		GRBModel model = GRBModel(env);
 
@@ -243,7 +187,8 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 			printf("Starting up Gurobi\n");
 		}
 		else {
-			env.set(GRB_INT_PAR_OUTPUTFLAG, "0");
+			model.set(GRB_INT_PAR_OUTPUTFLAG, "0");
+			model.set(GRB_INT_PAR_LOGTOCONSOLE, "0");
 		}
 
 		//

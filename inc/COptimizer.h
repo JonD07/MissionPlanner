@@ -23,11 +23,12 @@
 #include "Solver.h"
 #include "TourImprover.h"
 #include "gurobi_c++.h"
+#include "q_vs_distance.h"
 
 
 
 
-#define DEBUG_CV_OPTMZR		DEBUG || 1
+#define DEBUG_CV_OPTMZR		DEBUG || 0
 
 #define CONST_RELAXATION(X)		X,X+0.1
 
@@ -61,17 +62,6 @@ public:
 
 	// Lookup distance
 	double lookup_distance(int node_type, double q_size, double velocity);
-
-	// Distance lookup table array for data_size and air speed to optimal distance approximation
-	// distance_lookup[node_type][velocity][data_size]
-	// node_type := pi3, pi4
-	const static uint16_t NUM_NODE_TYPES = 2;
-	// velocity := 2-20 [m/s] in increments of 1 m/s
-	const static uint16_t NUM_VELOCITY_MEASUREMENTS = 19;
-	// packet_size := .001 * eighth_root(2)^index [MB]
-	const static uint16_t NUM_DATA_PACKAGE_SIZES = 160;
-	// For example, the final entry for packet size is 0.001 * 2^(159/8) = 961.548431607 MB
-	double pi_q_vs_distance_lookup[NUM_NODE_TYPES][NUM_VELOCITY_MEASUREMENTS][NUM_DATA_PACKAGE_SIZES];
 protected:
 private:
 	Constraint_tx_type constraint_type;

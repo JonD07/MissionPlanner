@@ -162,7 +162,7 @@ Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_pa
 	}
 	else {
 		if(SANITY_PRINT)
-			printf("Successfully read input\n\n");
+			printf("Successfully read input\n");
 	}
 }
 
