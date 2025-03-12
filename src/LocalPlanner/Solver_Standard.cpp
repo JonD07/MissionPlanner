@@ -18,6 +18,9 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 
 	// Is there only 1 nodes left (i.e. is next-list empty)?
 	if(sub_tour->size() == 0) {
+		if(SANITY_PRINT) {
+			printf(" Adding single node...\n");
+		}
 		// Only 1 node left.. just visit that one
 		HoveringLocation hl(onlineInput->getX_f(), onlineInput->getY_f(), onlineInput->getZ_f() + input->getZs_i(firstNode_i), firstNode_i);
 		I_crnt->AddHL(hl);
@@ -40,7 +43,7 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 				model.set(GRB_DoubleParam_TimeLimit, 30.0);
 			}
 
-			if(DEBUG_SLVR_STD) {
+			if(DEBUG_SLVR_STD || SANITY_PRINT) {
 				printf("Starting up Gurobi\n");
 			}
 			else {
