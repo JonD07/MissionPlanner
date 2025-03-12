@@ -2,7 +2,7 @@
 #include "Online_Input.h"
 
 
-Solver_Standard::Solver_Standard() {
+Solver_Standard::Solver_Standard(Constraint_tx_type constraint_type) : COptimizer(constraint_type) {
 	if(SANITY_PRINT)
 		printf("Hello from Standard Solver!\n");
 }
@@ -24,8 +24,21 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 		env.set("LogFile", "mip1.log");
 		env.start();
 		GRBModel model = GRBModel(env);
-//		model.set(GRB_IntParam_NonConvex, 2);
-//		model.set(GRB_DoubleParam_TimeLimit, 20.0);
+
+		// Are we using non-convex constraints for TX rate?
+		if(constraint_type == Constraint_tx_type::PWL or constraint_type == Constraint_tx_type::INVERSE_SQUARE) {
+			// Tell Gurobi this is non-convex
+			model.set(GRB_IntParam_NonConvex, 2);
+			model.set(GRB_DoubleParam_TimeLimit, 30.0);
+		}
+
+		if(DEBUG_SLVR_STD) {
+			printf("Starting up Gurobi\n");
+		}
+		else {
+			model.set(GRB_INT_PAR_OUTPUTFLAG, "0");
+			model.set(GRB_INT_PAR_LOGTOCONSOLE, "0");
+		}
 
 		//
 		/// Create variables
@@ -211,30 +224,35 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 			input->getTXParams_i(firstNode_i, &a, &b, &r_m, &c);
 
 			// Determine line equation to approximate TX rate curve
-			double y1 = r_m;
-			double x1 = sqrt(a/(y1-b) - c);
-			double y2 = r_m/2.0;
-			double x2 = sqrt(a/(y2-b) - c);
-			double m = (y2-y1)/(x2-x1);
+			double z_s = input->getZs_i(firstNode_i);
+			double rate = a/(z_s*z_s+c)+b;
+			rate = rate > r_m ? r_m : rate;
 
-			model.addQConstr(R_f <= m*(Dn_f - x1) + y1, "Rf_leq_math");
+			model.addQConstr(R_f <= rate, "Rf_leq_math");
 		}
 
-		// Limit TX rate (Single linear approximation -- other nodes)
+		std::vector<Point> sub_tour_points;
 		for(int j = 0; j < n_k; j++) {
-			// Get battery details for this node
+			// Each node that is left
 			int i = sub_tour->at(j);
-			double a, b, r_m, c;
-			input->getTXParams_i(i, &a, &b, &r_m, &c);
+			Point temp(i, input->getX_i(i), input->getY_i(i), input->getZ_i(i));
+			sub_tour_points.push_back(temp);
+		}
 
-			// Determine line equation to approximate TX rate curve
-			double y1 = r_m;
-			double x1 = sqrt(a/(y1-b)-c);
-			double y2 = r_m/2.0;
-			double x2 = sqrt(a/(y2-b)-c);
-			double m = (y2-y1)/(x2-x1);
+		// Limit TX rate
+		switch (constraint_type)
+		{
+		case Constraint_tx_type::TABULAR_CUT:
+			GenerateLazyConstraint(0, model, &sub_tour_points, input, &R_j, &Dn_j);
+			break;
 
-			model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
+		case Constraint_tx_type::SINGLE_APPROXIMATION:
+			GenerateSingleApproxConstraint(model, &sub_tour_points, input, &R_j, &Dn_j);
+			break;
+
+		default:
+			std::cout << "Unrecognized constraint tx type" << std::endl;
+			break;
 		}
 
 

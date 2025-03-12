@@ -57,6 +57,5 @@ private:
 	int drone_type = 0;
 	double currnt_x = 0.0, currnt_y = 0.0, currnt_z = 0.0;
 	int first_node = 0;
-	Drone* drone = NULL;
 	std::vector<int> next_list;
 };

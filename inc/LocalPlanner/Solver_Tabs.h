@@ -1,11 +1,11 @@
 /*
- * Solver_Standard.h
+ * Solver_Tabs.h
  *
  * Created by:	Jonathan Diller
- * On: 			Sep 17, 2024
+ * On: 			Mar 10, 2025
  *
- * Description: Standard online, local planner. This planner uses gurobi to optimize
- * hovering locations and expects a fixed ordering to the nodes to visit.
+ * Description: This planner uses Gurobi within the COptimizer with look-up tables
+ * to optimize hovering locations and expects a fixed ordering to the nodes to visit.
  */
 
 #pragma once
@@ -18,16 +18,15 @@
 #include "Solver.h"
 #include "gurobi_c++.h"
 #include "Online_Input.h"
-#include "COptimizer.h"
 
 #define DEBUG_SLVR_STD		DEBUG || 0
 
 #define CONST_RELAXATION(X)		X,X+0.1
 
 
-class Solver_Standard : public Solver, public COptimizer {
+class Solver_Tabs : public Solver {
 public:
-	Solver_Standard(Constraint_tx_type constraint_type);
+	Solver_Tabs();
 
 	void Solve(Input* input, Solution* I_final);
 

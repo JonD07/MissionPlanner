@@ -69,6 +69,7 @@ add_executable(mission-planner
 
 add_executable(local-planner
 	src/LocalPlanner/main.cpp
+	src/COptimizer.cpp
 	src/Drone.cpp
 	src/DroneGenerator.cpp
 	src/FileReader.cpp
@@ -78,6 +79,7 @@ add_executable(local-planner
 	src/NodeGenerator.cpp
 	src/Solution.cpp
 	src/Solver.cpp
+	src/TourImprover.cpp
 	src/Utilities.cpp
 	src/LocalPlanner/Online_Input.cpp
 	src/LocalPlanner/Solver_Standard.cpp

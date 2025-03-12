@@ -60,7 +60,7 @@ public:
 	// Prints this solution
 	void PrintSolution();
 	// Prints plan file
-	void PrintPlan(bool from_launch = true);
+	void PrintPlan(bool add_launch = true, bool add_land = true, std::string outputPath = "plan/");
 	/*
 	 * Determines the probability reward gained for the stored solution
 	 */

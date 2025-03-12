@@ -43,7 +43,7 @@ void Solution::PrintSolution() {
 }
 
 // Prints plan file
-void Solution::PrintPlan(bool from_launch) {
+void Solution::PrintPlan(bool add_launch, bool add_land, std::string outputPath) {
 	// Cycle through drones
 	for(int l = 0; l < m_input->getM(); l++) {
 		// Cycle through sub-tours for drone l
@@ -54,7 +54,6 @@ void Solution::PrintPlan(bool from_launch) {
 				// Open a new plan file
 				FILE * pOutputFile;
 				char buff[100];
-				std::string outputPath = "plan/";
 				sprintf(buff, "%s", outputPath.c_str());
 				sprintf(buff + strlen(buff), "plan_%d_%d.pln", l, k);
 				if(SANITY_PRINT)
@@ -62,7 +61,7 @@ void Solution::PrintPlan(bool from_launch) {
 				pOutputFile = fopen(buff, "w");
 
 				// Do we need to take off?
-				if(from_launch) {
+				if(add_launch) {
 					// Take off
 					fprintf(pOutputFile, "0 %f\n", START_AGL);
 				}
@@ -78,8 +77,11 @@ void Solution::PrintPlan(bool from_launch) {
 
 				// Return home
 				fprintf(pOutputFile, "2 %f\n", START_AGL);
-				// Land
-				fprintf(pOutputFile, "3\n");
+				// Do we need to land? (not used on real drone!)
+				if(add_land) {
+					// Land
+					fprintf(pOutputFile, "3\n");
+				}
 
 				fclose(pOutputFile);
 			}

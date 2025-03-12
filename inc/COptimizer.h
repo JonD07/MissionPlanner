@@ -47,6 +47,7 @@ public:
 
 	// Finds optimized hovering locations. Returns false if no solution found (hit drone energy limit)
 	bool ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tour, bool aprx_tx_curve = false);
+protected:
 
 	//Generates Single Approximation constraint
 	void GenerateSingleApproxConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar>* R_j, std::vector<GRBVar>* Dn_j);
@@ -62,9 +63,7 @@ public:
 
 	// Lookup distance
 	double lookup_distance(int node_type, double q_size, double velocity);
-protected:
-private:
+
 	Constraint_tx_type constraint_type;
-
-
+private:
 };

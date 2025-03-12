@@ -3,12 +3,14 @@
 # Location of drone data file
 ../data/drone_data.dat
 # Location of problem input file
-../Experiment1/plot_40_0.txt
+../FW_Test/plot_5_0.txt
 # Drone type
 0
+# Speed, Energy budget
+7.5 0.8
 # Current location
-86.42 -244.31 13.30
+55.0 120.0 0.0
 # Node to visit (over-head)
 2
 # Nodes to visit next (ordered list, consider TX rate)
-4 0 1
+3 1 4 0

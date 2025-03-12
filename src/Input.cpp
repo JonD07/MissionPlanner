@@ -44,17 +44,29 @@ Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_pa
 		// Line reading failed
 		read_success = false;
 	}
+	else {
+		if(DEBUG_INPUT)
+			printf("Extracted node line\n");
+	}
 
 	// Get drone data file
 	if(read_success && !scenarioFileReader.GetNextLine(&drone_line)) {
 		// Line reading failed
 		read_success = false;
 	}
+	else {
+		if(DEBUG_INPUT)
+			printf("Extracted drone line\n");
+	}
 
 	// Get problem input file
 	if(read_success && !scenarioFileReader.GetNextLine(&input_line)) {
 		// Line reading failed
 		read_success = false;
+	}
+	else {
+		if(DEBUG_INPUT)
+			printf("Extracted input line\n");
 	}
 
 	// Did we at least get all of the above?
@@ -194,7 +206,7 @@ double Input::getTb_l(int l) {
 	}
 	else {
 		// Shouldn't be asking for something that does not exist..
-		fprintf(stderr, "[Input::getV_l] : Bad drone index\n");
+		fprintf(stderr, "[Input::getTb_l] : Bad drone index\n");
 		exit(1);
 	}
 }
@@ -222,7 +234,7 @@ double Input::getRho_h(int l) {
 	}
 	else {
 		// Shouldn't be asking for something that does not exist..
-		fprintf(stderr, "[Input::getRho_m] : Bad drone index\n");
+		fprintf(stderr, "[Input::getRho_h] : Bad drone index\n");
 		exit(1);
 	}
 }
@@ -235,7 +247,7 @@ double Input::getB_l(int l) {
 	}
 	else {
 		// Shouldn't be asking for something that does not exist..
-		fprintf(stderr, "[Input::getRho_m] : Bad drone index\n");
+		fprintf(stderr, "[Input::getB_l] : Bad drone index\n");
 		exit(1);
 	}
 }

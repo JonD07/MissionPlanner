@@ -7,6 +7,7 @@ Online_Input::Online_Input(std::string scenario_input_path) : Input(scenario_inp
 		Location of drone data file
 		Location of problem input file
 		Drone type
+		Speed, Energy budget
 		Current location
 		Node # to visit (over-head)
 		Nodes to visit next (ordered list, consider TX rate)
@@ -20,6 +21,8 @@ Online_Input::Online_Input(std::string scenario_input_path) : Input(scenario_inp
 		../Experiment01/plot_5_0.txt
 		# Drone type
 		0
+		# Speed, Energy budget
+		7.5 0.8
 		# Current location
 		82.19 144.48 19.31
 		# Node to visit (over-head)
@@ -36,22 +39,31 @@ Online_Input::Online_Input(std::string scenario_input_path) : Input(scenario_inp
 		DroneGenerator droneGenerator(drone_line);
 
 		if(DEBUG_ONLINEINPUT)
-			printf("Reading in setup:\n");
+			printf("Reading in online setup:\n");
 
-		// We expect 4 more lines: drone type, location, first node, rest of the nodes
-		if(scenario_data.size() == 4) {
-			for(int i = 0; i < 4 && read_success; i++) {
+		// We expect 5 more lines: drone type, drone speed/budget, location, first node, rest of the nodes
+		if(scenario_data.size() == 5) {
+			for(int i = 0; i < 5 && read_success; i++) {
 				std::stringstream parameterStream(scenario_data.at(i));
 				switch(i) {
 				case 0:
 					// Drone type
 					{
 						parameterStream >> drone_type;
-						drone = droneGenerator.GenerateDrone(drone_type);
 						M++;
 					}
 					break;
 				case 1:
+					// Speed and energy
+					{
+						double speed, energy_budget;
+						parameterStream >> speed;
+						parameterStream >> energy_budget;
+						vDroneLst.push_back(droneGenerator.GenerateDrone(drone_type, speed, energy_budget));
+						M++;
+					}
+					break;
+				case 2:
 					// Current location
 					{
 						parameterStream >> currnt_x;
@@ -59,13 +71,13 @@ Online_Input::Online_Input(std::string scenario_input_path) : Input(scenario_inp
 						parameterStream >> currnt_z;
 					}
 					break;
-				case 2:
+				case 3:
 					// The first node to visit (over head)
 					{
 						parameterStream >> first_node;
 					}
 					break;
-				case 3:
+				case 4:
 					// List of next nodes
 					{
 						int next_node;
@@ -82,7 +94,8 @@ Online_Input::Online_Input(std::string scenario_input_path) : Input(scenario_inp
 		}
 
 		if(DEBUG_ONLINEINPUT) {
-			printf(" Drone type %d at (%.3f, %.3f, %.3f)\n", drone_type, currnt_x, currnt_y, currnt_z);
+			printf(" Drone type %d at (%.3f, %.3f, %.3f)\n speed = %0.1f, budget = %0.1f", drone_type, currnt_x, currnt_y, currnt_z,
+					vDroneLst.at(0)->GetSpeed(), vDroneLst.at(0)->GetPlannableEnergy());
 			printf(" Nodes to visit:\n  %d (overhead)", first_node);
 			for(int n : next_list) {
 				printf(" %d", n);
@@ -105,7 +118,7 @@ Online_Input::Online_Input(std::string scenario_input_path) : Input(scenario_inp
 }
 
 Online_Input::~Online_Input() {
-	delete drone;
+	// Nothing much to see here..
 }
 
 
@@ -117,24 +130,24 @@ int Online_Input::getNk() {
 
 // Get the operational speed of drone l
 double Online_Input::getV() {
-	if(drone != NULL) {
-		return drone->GetSpeed();
+	if(vDroneLst.size() > 0) {
+		return vDroneLst.at(0)->GetSpeed();
 	}
 	else {
 		// Shouldn't be asking for something that does not exist..
-		fprintf(stderr, "[Input::getV] : No drone\n");
+		fprintf(stderr, "[Online_Input::getV] : No drone\n");
 		exit(1);
 	}
 }
 
 // Get the time to swap batteries of drone l
 double Online_Input::getTb() {
-	if(drone != NULL) {
-		return drone->GetSwapTime();
+	if(vDroneLst.size() > 0) {
+		return vDroneLst.at(0)->GetSwapTime();
 	}
 	else {
 		// Shouldn't be asking for something that does not exist..
-		fprintf(stderr, "[Input::getV_l] : No drone\n");
+		fprintf(stderr, "[Online_Input::getTb] : No drone\n");
 		exit(1);
 	}
 }
@@ -143,12 +156,12 @@ double Online_Input::getTb() {
 double Online_Input::getRho_m() {
 	// y = c1x^{3} + c2x^{2} + c3x + c4
 	//   where x = set speed
-	if(drone != NULL) {
-		return drone->GetRhoM();
+	if(vDroneLst.size() > 0) {
+		return vDroneLst.at(0)->GetRhoM();
 	}
 	else {
 		// Shouldn't be asking for something that does not exist..
-		fprintf(stderr, "[Input::getRho_m] : No drone\n");
+		fprintf(stderr, "[Online_Input::getRho_m] : No drone\n");
 		exit(1);
 	}
 }
@@ -157,12 +170,12 @@ double Online_Input::getRho_m() {
 double Online_Input::getRho_h() {
 	// y = c1x^{3} + c2x^{2} + c3x + c4
 	//   where x = 0.... -> y = c4
-	if(drone != NULL) {
-		return drone->GetRhoH();
+	if(vDroneLst.size() > 0) {
+		return vDroneLst.at(0)->GetRhoH();
 	}
 	else {
 		// Shouldn't be asking for something that does not exist..
-		fprintf(stderr, "[Input::getRho_m] : No drone\n");
+		fprintf(stderr, "[Online_Input::getRho_h] : No drone\n");
 		exit(1);
 	}
 }
@@ -170,12 +183,12 @@ double Online_Input::getRho_h() {
 
 // Get beta for drone l (planning energy budget, in Jule)
 double Online_Input::getB() {
-	if(drone != NULL) {
-		return drone->GetPlannableEnergy();
+	if(vDroneLst.size() > 0) {
+		return vDroneLst.at(0)->GetPlannableEnergy();
 	}
 	else {
 		// Shouldn't be asking for something that does not exist..
-		fprintf(stderr, "[Input::getRho_m] : No drone\n");
+		fprintf(stderr, "[Online_Input::getB] : No drone\n");
 		exit(1);
 	}
 }

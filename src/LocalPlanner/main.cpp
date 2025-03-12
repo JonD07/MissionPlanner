@@ -14,6 +14,7 @@
 
 #define PRINT_PLAN			true
 #define PRINT_PERFORMANCE	false
+#define REAL_DRONE			false
 
 #define DATA_LOG_FORMAT	"alg_%d.dat"
 
@@ -25,13 +26,14 @@ enum {
 int main(int argc, char *argv[]) {
 	// Run parameters
 	bool print_plan = PRINT_PLAN;
+	int real_drone = REAL_DRONE;
 	int algorithm = e_Algo_STANDARD;
 	bool print_performance = PRINT_PERFORMANCE;
 	std::string outputPath = "";
 
 	// Verify user input
 	if(argc < 2) {
-		fprintf(stderr, "Received %d args, expected 2 or more.\nExpected use:\t./local-planner <file path> [print plan] [algorithm] [print performance] [file path]\n\n", (argc-1));
+		fprintf(stderr, "Received %d args, expected 2 or more.\nExpected use:\t./local-planner <file path> [print plan?] [real drone?] [algorithm] [print performance] [file path]\n\n", (argc-1));
 		exit(1);
 	}
 
@@ -40,18 +42,25 @@ int main(int argc, char *argv[]) {
 	}
 	else if(argc == 4) {
 		print_plan = atoi(argv[2]);
-		algorithm = atoi(argv[3]);
+		real_drone = atoi(argv[3]);
 	}
 	else if(argc == 5) {
 		print_plan = atoi(argv[2]);
-		algorithm = atoi(argv[3]);
-		print_performance = atoi(argv[4]);
+		real_drone = atoi(argv[3]);
+		algorithm = atoi(argv[4]);
 	}
 	else if(argc == 6) {
 		print_plan = atoi(argv[2]);
-		algorithm = atoi(argv[3]);
-		print_performance = atoi(argv[4]);
-		outputPath = std::string(argv[5]);
+		real_drone = atoi(argv[3]);
+		algorithm = atoi(argv[4]);
+		print_performance = atoi(argv[5]);
+	}
+	else if(argc == 7) {
+		print_plan = atoi(argv[2]);
+		real_drone = atoi(argv[3]);
+		algorithm = atoi(argv[4]);
+		print_performance = atoi(argv[5]);
+		outputPath = std::string(argv[6]);
 	}
 
 	Solver* solver = NULL;
@@ -62,7 +71,7 @@ int main(int argc, char *argv[]) {
 	// Optimal solver
 	case e_Algo_STANDARD:
 	default: {
-		solver = new Solver_Standard();
+		solver = new Solver_Standard(Constraint_tx_type::TABULAR_CUT);
 	}
 	break;
 	}
@@ -111,7 +120,7 @@ int main(int argc, char *argv[]) {
 	// Print flight plan?
 	if(print_plan) {
 		// Yes, print flight plan!
-		solution.PrintPlan(false);
+		solution.PrintPlan(false, !real_drone, "plan_online/");
 	}
 
 	delete solver;
