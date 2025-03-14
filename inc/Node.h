@@ -14,12 +14,13 @@
 #include <string>
 
 #include "defines.h"
+#include "q_vs_distance.h"
 
 
 struct NodeParameters {
 	int type_id;
-	// TX is determined by the equation: min(a/(x^2+c)+b
-	double A, B, maxRate, C, R;
+	// TX is determined by the equation: min( a/(x^2+c)+b , r_max)
+	double A, B, maxRate, C, R, minRate;
 
 	NodeParameters() {
 		type_id = -1;
@@ -28,14 +29,16 @@ struct NodeParameters {
 		maxRate = 0;
 		C = 0;
 		R = 0;
+		minRate = 0;
 	}
-	NodeParameters(int id, double a, double b, double maxR, double c, double r) {
+	NodeParameters(int id, double a, double b, double maxR, double c, double range, double minR) {
 		type_id = id;
 		A = a;
 		B = b;
 		maxRate = maxR;
 		C = c;
-		R = r;
+		R = range;
+		minRate = minR;
 	}
 	NodeParameters(const NodeParameters& other) {
 		type_id = other.type_id;
@@ -44,6 +47,7 @@ struct NodeParameters {
 		maxRate = other.maxRate;
 		C = other.C;
 		R = other.R;
+		minRate = other.minRate;
 	}
 	NodeParameters& operator=(const NodeParameters& other) {
 		type_id = other.type_id;
@@ -52,6 +56,7 @@ struct NodeParameters {
 		maxRate = other.maxRate;
 		C = other.C;
 		R = other.R;
+		minRate = other.minRate;
 
 	    return *this;
 	}
@@ -84,9 +89,11 @@ public:
 	// Get this node's type
 	std::string getIP() { return sIP; }
 	// Get data TX parameters
-	void getTXParams(double* a, double* b, double* max_rate, double* C);
+	void getTXParams(double* a, double* b, double* max_rate, double* C, double* min_rate);
 	// Get the "agnostic" max TX range
 	double getR();
+	// Given drone velocity, lookup the optimal range to communicate with sensor
+	double getOptimalRange(double velocity);
 
 
     // Predicted time required to collect data from this node from location x,y

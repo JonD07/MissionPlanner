@@ -43,16 +43,27 @@ double Node::GetDistanceTo(Node* n) {
 }
 
 // Get data TX parameters
-void Node::getTXParams(double* a, double* b, double* max_rate, double* C) {
+void Node::getTXParams(double* a, double* b, double* max_rate, double* C, double* min_rate) {
 	*a = oNodeParameters.A;
 	*b = oNodeParameters.B;
 	*max_rate = oNodeParameters.maxRate;
 	*C = oNodeParameters.C;
+	*min_rate = oNodeParameters.minRate;
 }
 
 // Get the "agnostic" max TX range
 double Node::getR() {
 	return oNodeParameters.R;
+}
+
+// Given drone velocity, lookup the optimal range to communicate with sensor
+double Node::getOptimalRange(double velocity) {
+	// We will round everything down
+	//use sizeof to clean up these hardcoded constants. Explanation of these numbers is in input.h
+	int velocity_index = int(velocity) - 2;
+	int q_size_index = int( log2(fQ/0.001)*8 );
+	double distance = pi_q_vs_distance_lookup[nNodeType][velocity_index][q_size_index];
+	return distance;
 }
 
 // Predicted time required to collect data from this node from location x,y,z

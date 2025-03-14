@@ -94,10 +94,10 @@ bool HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 		for(int j = 0; j < M_k; j++) {
 			int i = sub_tour->at(j);
 			// Get battery details
-			double a, b, mrate, c;
-			input->getTXParams_i(i, &a, &b, &mrate, &c);
+			double a, b, maxR, c, minR;
+			input->getTXParams_i(i, &a, &b, &maxR, &c, &minR);
 			// Sequence number for waypoint i
-			GRBVar r = model.addVar(0.0, mrate, 0.0, GRB_CONTINUOUS,  "r_" + itos(j));
+			GRBVar r = model.addVar(minR, maxR, 0.0, GRB_CONTINUOUS,  "r_" + itos(j));
 			R_j.push_back(r);
 		}
 
@@ -153,22 +153,22 @@ bool HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 			for(int j = 0; j < M_k; j++) {
 				// Get battery details for this node
 				int i = sub_tour->at(j);
-				double a, b, r_m, c;
-				input->getTXParams_i(i, &a, &b, &r_m, &c);
+				double a, b, maxR, c, minR;
+				input->getTXParams_i(i, &a, &b, &maxR, &c, &minR);
 
 				// Compute points (D, R) of R = a/(D)^2 + b for some step length
 				double intv = 2.0;
 				double xmax = 150.0;
-				int len = (int) ceil((xmax-sqrt(a/(r_m - b) - c))/intv) + 1;
+				int len = (int) ceil((xmax-sqrt(a/(maxR - b) - c))/intv) + 1;
 				double* xpts = new double[len];
 				double* upts = new double[len];
 				xpts[0] = 0.0;
-				upts[0] = r_m;
-				xpts[1] = sqrt(a/(r_m - b) - c);
-				upts[1] = r_m;
+				upts[0] = maxR;
+				xpts[1] = sqrt(a/(maxR - b) - c);
+				upts[1] = maxR;
 				for(int i = 2; i < len; i++) {
 					xpts[i] = i*intv + xpts[1];
-					upts[i] = std::min(a/(pow(i*intv, 2) + c) + b, r_m);
+					upts[i] = std::min(a/(pow(i*intv, 2) + c) + b, maxR);
 				}
 				model.addGenConstrPWL(Dn_j.at(j), R_j.at(j), len, xpts, upts, "R_"+itos(j)+"_leq_math");
 			}
@@ -178,18 +178,18 @@ bool HLOptimizer::Optimize(int l, Input* input, const std::vector<int>* sub_tour
 			for(int j = 0; j < M_k; j++) {
 				// Get battery details for this node
 				int i = sub_tour->at(j);
-				double a, b, r_m, c;
-				input->getTXParams_i(i, &a, &b, &r_m, &c);
+				double a, b, maxR, c, minR;
+				input->getTXParams_i(i, &a, &b, &maxR, &c, &minR);
 
 				// Determine line equation to approximate TX rate curve
-				double y1 = r_m;
+				double y1 = maxR;
 				double x1 = sqrt(a/(y1-b)-c);
-				double y2 = r_m/2.0;
+				double y2 = maxR/2.0;
 				double x2 = sqrt(a/(y2-b)-c);
 				double m = (y2-y1)/(x2-x1);
 
 				if(DEBUG_HL_OPTMZR)
-					printf(" %d : a=%.2f, b=%.2f, r_m=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n",i,a, b, r_m, c,m,x1,y1);
+					printf(" %d : a=%.2f, b=%.2f, r_m=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n",i,a, b, maxR, c,m,x1,y1);
 
 				model.addQConstr(R_j.at(j) <= m*(Dn_j.at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
 			}

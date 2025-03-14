@@ -27,15 +27,6 @@ COptimizer::COptimizer(Constraint_tx_type constraint_type) : constraint_type(con
 	}
 }
 
-double COptimizer::lookup_distance(int node_type, double q_size, double velocity) {
-	// We will round everything down
-	//use sizeof to clean up these hardcoded constants. Explanation of these numbers is in input.h
-	int velocity_index = int(velocity) - 2;
-	int q_size_index = int( log2(q_size/0.001)*8 );
-	double distance = pi_q_vs_distance_lookup[node_type][velocity_index][q_size_index];
-	return distance;
-}
-
 /*
  * Helper Function for generating single approximation (the simple ones) constraints
  */
@@ -45,18 +36,18 @@ void COptimizer::GenerateSingleApproxConstraint(GRBModel &model, std::vector<Poi
 	for(int j = 0; j < M_k; j++) {
 		// Get battery details for this node
 		int i = sub_tour->at(j).node_id;
-		double a, b, max_rate, c;
-		input->getTXParams_i(i, &a, &b, &max_rate, &c);
+		double a, b, maxR, c, minR;
+		input->getTXParams_i(i, &a, &b, &maxR, &c, &minR);
 
 		// Determine line equation to approximate TX rate curve
-		double y1 = max_rate;
+		double y1 = maxR;
 		double x1 = sqrt(a/(y1-b)-c);
-		double y2 = max_rate/2.0;
+		double y2 = maxR/2.0;
 		double x2 = sqrt(a/(y2-b)-c); // lookup
 		double m = (y2-y1)/(x2-x1);
 
 		if(DEBUG_CV_OPTMZR)
-			printf(" %d : a=%.2f, b=%.2f, max_rate=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n",i,a, b, max_rate, c,m,x1,y1);
+			printf(" %d : a=%.2f, b=%.2f, max_rate=%.2f, c=%.2f, m=%.2f, (x1,y1)=(%.2f,%.2f)\n",i,a, b, maxR, c,m,x1,y1);
 
 		model.addQConstr(R_j->at(j) <= m*(Dn_j->at(j) - x1) + y1, "R_"+itos(j)+"_leq_math");
 	}
@@ -69,23 +60,23 @@ void COptimizer::GeneratePWLConstraint(GRBModel &model, std::vector<Point>* sub_
 	for(int j = 0; j < M_k; j++) {
 		// Get battery details for this node
 		int node = sub_tour->at(j).node_id;
-		double a, b, max_rate, c;
-		input->getTXParams_i(node, &a, &b, &max_rate, &c);
+		double a, b, maxR, c, minR;
+		input->getTXParams_i(node, &a, &b, &maxR, &c, &minR);
 
 		// Compute points (D, R) of R = a/(D)^2 + b for some step length
 		double intv = 2.0;
 		double xmax = 150.0;
-		int len = (int) ceil((xmax-sqrt(a/(max_rate - b) - c))/intv) + 1;
+		int len = (int) ceil((xmax-sqrt(a/(maxR - b) - c))/intv) + 1;
 
 		double* xpts = new double[len];
 		double* upts = new double[len];
 		xpts[0] = 0.0;
-		upts[0] = max_rate;
-		xpts[1] = sqrt(a/(max_rate - b) - c);
-		upts[1] = max_rate;
+		upts[0] = maxR;
+		xpts[1] = sqrt(a/(maxR - b) - c);
+		upts[1] = maxR;
 		for(int i = 2; i < len; i++) {
 			xpts[i] = i*intv + xpts[1];
-			upts[i] = std::min(a/(pow(xpts[i], 2) + c) + b, max_rate);
+			upts[i] = std::min(a/(pow(xpts[i], 2) + c) + b, maxR);
 		}
 
 		model.addGenConstrPWL(Dn_j->at(j), R_j->at(j), len, xpts, upts, "R_"+itos(j)+"_leq_math");
@@ -101,19 +92,10 @@ void COptimizer::GenerateLazyConstraint(int l, GRBModel &model, std::vector<Poin
 	for(int j = 0; j < M_k; j++) {
 		int node_id = sub_tour->at(j).node_id;
 		// Get battery details for this node
-		double a, b, max_rate, c;
-		input->getTXParams_i(node_id, &a, &b, &max_rate, &c);
-		// get node type (pi 3 or pi 4)
-		double node_type;
-		node_type = input->getNodeType_i(node_id);
-		// get packet size for this node
-		double q;
-		q = input->getQ_i(node_id);
-		// get velocity for this drone
-		double velocity;
-		velocity = input->getV_l(l);
+		double a, b, maxR, c, minR;
+		input->getTXParams_i(node_id, &a, &b, &maxR, &c, &minR);
 		// Use lookup table to get distance
-		double distance = lookup_distance(node_type, q, velocity);
+		double distance = input->getOptimalRange(l, node_id);
 
 		int i = sub_tour->at(j).node_id;
 		double Zs_i = input->getZs_i(i);
@@ -124,9 +106,19 @@ void COptimizer::GenerateLazyConstraint(int l, GRBModel &model, std::vector<Poin
 			distance = Zs_i + EPSILON;
 		}
 
+		// Verify that we aren't past the minimum rate
+		{
+			double y_min = minR;
+			double x_max = sqrt(a/(y_min-b)-c);
+			// Is this closer to us than the optimal distance?
+			if(x_max < distance) {
+				distance = x_max;
+			}
+		}
+
 		// Determine line equation to approximate TX rate curve
 		// First two points are the saturated TX rate
-		double y1 = max_rate;
+		double y1 = maxR;
 		double x1 = sqrt(a/(y1-b)-c);
 		// Second two points 
 		double x2 = distance;
@@ -153,8 +145,8 @@ void COptimizer::GenerateInverseSquareConstraint(GRBModel &model, std::vector<Po
 	for(int j = 0; j < M_k; j++) {
 		int node_id = sub_tour->at(j).node_id;
 		// Get battery details for this node
-		double a, b, max_rate, c;
-		input->getTXParams_i(node_id, &a, &b, &max_rate, &c);
+		double a, b, maxR, c, minR;
+		input->getTXParams_i(node_id, &a, &b, &maxR, &c, &minR);
 		
 		// Add the actual constraint
 		model.addQConstr( (R_j->at(j) - b) * (D2n_j->at(j) + c) <= a, "R_"+itos(j)+"_eq_math");
@@ -269,10 +261,10 @@ bool COptimizer::ImproveSubTour(int l, Input* input, std::vector<Point>* sub_tou
 		for(int j = 0; j < M_k; j++) {
 			int i = sub_tour->at(j).node_id;
 			// Get battery details
-			double a, b, mrate, c;
-			input->getTXParams_i(i, &a, &b, &mrate, &c);
+			double a, b, maxR, c, minR;
+			input->getTXParams_i(i, &a, &b, &maxR, &c, &minR);
 			// Sequence number for waypoint i
-			GRBVar r = model.addVar(0.0, mrate, 0.0, GRB_CONTINUOUS,  "r_" + itos(j));
+			GRBVar r = model.addVar(minR, maxR, 0.0, GRB_CONTINUOUS,  "r_" + itos(j));
 			R_j.push_back(r);
 		}
 

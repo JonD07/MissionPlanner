@@ -319,14 +319,14 @@ int Input::getNodeType_i(int i) {
 }
 
 // Get data TX parameters for node i
-void Input::getTXParams_i(int i, double* a, double* b, double* max_rate, double* C) {
+void Input::getTXParams_i(int i, double* a, double* b, double* max_rate, double* C, double* min_rate) {
 	// Range check..
 	if(i < 0 || i >= N) {
 		fprintf(stderr,"[ERROR:Input::getTXParams_i] Bad index : %d\n", i);
 		exit(1);
 	}
 
-	vNodeLst.at(i)->getTXParams(a, b, max_rate, C);
+	vNodeLst.at(i)->getTXParams(a, b, max_rate, C, min_rate);
 }
 
 // Get the "agnostic" max TX range for node i
@@ -338,6 +338,17 @@ double Input::getR_i(int i) {
 	}
 
 	return vNodeLst.at(i)->getR();
+}
+
+// Given drone velocity, lookup the optimal range to communicate with node i
+double Input::getOptimalRange(int l, int i) {
+	// Range check..
+	if(i < 0 || i >= N) {
+		fprintf(stderr,"[ERROR:Input::getOptimalRange] Bad index : %d\n", i);
+		exit(1);
+	}
+
+	return vNodeLst.at(i)->getOptimalRange(getV_l(l));
 }
 
 // Get a pointer to node i

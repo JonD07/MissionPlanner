@@ -144,9 +144,9 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 			// Create TX rate variable for first node
 			GRBVar R_f;
 			{
-				double a, b, mrate, C;
-				input->getTXParams_i(firstNode_i, &a, &b, &mrate, &C);
-				R_f = model.addVar(0.0, mrate, 0.0, GRB_CONTINUOUS,  "r_");
+				double a, b, maxR, C, minR;
+				input->getTXParams_i(firstNode_i, &a, &b, &maxR, &C, &minR);
+				R_f = model.addVar(minR, maxR, 0.0, GRB_CONTINUOUS,  "r_");
 			}
 
 			// Create TX rate variables
@@ -154,10 +154,10 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 			for(int j = 0; j < n_k; j++) {
 				int i = sub_tour->at(j);
 				// Get battery details
-				double a, b, mrate, C;
-				input->getTXParams_i(i, &a, &b, &mrate, &C);
+				double a, b, maxR, C, minR;
+				input->getTXParams_i(i, &a, &b, &maxR, &C, &minR);
 				// Sequence number for waypoint i
-				GRBVar r = model.addVar(0.0, mrate, 0.0, GRB_CONTINUOUS,  "r_" + itos(j));
+				GRBVar r = model.addVar(minR, maxR, 0.0, GRB_CONTINUOUS,  "r_" + itos(j));
 				R_j.push_back(r);
 			}
 
@@ -223,18 +223,18 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 				model.addConstr(lhs <= onlineInput->getB(), "pT_l_leq_b");
 			}
 
-			// Limit TX rate (Single linear approximation -- first node)
+			// Limit TX rate for first node (set to rate when directly above node)
 			{
 				// Get battery details for this node
-				double a, b, r_m, c;
-				input->getTXParams_i(firstNode_i, &a, &b, &r_m, &c);
+				double a, b, maxR, c, minR;
+				input->getTXParams_i(firstNode_i, &a, &b, &maxR, &c, &minR);
 
 				// Determine line equation to approximate TX rate curve
 				double z_s = input->getZs_i(firstNode_i);
 				double rate = a/(z_s*z_s+c)+b;
-				rate = rate > r_m ? r_m : rate;
+				rate = rate > maxR ? maxR : rate;
 
-				model.addQConstr(R_f <= rate, "Rf_leq_math");
+				model.addQConstr(R_f <= rate + EPSILON, "Rf_leq_math");
 			}
 
 			std::vector<Point> sub_tour_points;

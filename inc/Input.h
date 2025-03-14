@@ -73,9 +73,11 @@ public:
 	// Get i's node type
 	int getNodeType_i(int i);
 	// Get data TX parameters for node i
-	void getTXParams_i(int i, double* a, double* b, double* max_rate, double* C);
+	void getTXParams_i(int i, double* a, double* b, double* max_rate, double* C, double* min_rate);
 	// Get the "agnostic" max TX range for node i
 	double getR_i(int i);
+	// Lookup the optimal range for drone l to communicate with node i
+	double getOptimalRange(int l, int i);
 	// Get the x-coordinate of the base station
 	double getX_b() { return mBaseStation.fX; }
 	// Get the y-coordinate of the base station

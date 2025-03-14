@@ -18,7 +18,6 @@
 
 #include "Utilities.h"
 #include "Solver.h"
-#include "HLOptimizer.h"
 #include "ClusteringAlgorithm.h"
 #include "LKH_TSP_Solver.h"
 #include "COptimizer.h"

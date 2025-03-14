@@ -35,7 +35,7 @@ NodeGenerator::NodeGenerator(std::string data_path) : data_fileName(data_path), 
 		idStream >> id;
 
 		// Grab node parameters
-		double a, b, maxR, C, r;
+		double a, b, maxR, C, r, minR;
 		std::string parameter_line;
 		if(fileReader.GetNextLine(&parameter_line)) {
 			std::stringstream parameterStream(parameter_line);
@@ -44,9 +44,10 @@ NodeGenerator::NodeGenerator(std::string data_path) : data_fileName(data_path), 
 			parameterStream >> maxR;
 			parameterStream >> C;
 			parameterStream >> r;
+			parameterStream >> minR;
 
 			// Create a new node parameter object
-			NodeParameters parameters(id, a, b, maxR, C, r);
+			NodeParameters parameters(id, a, b, maxR, C, r, minR);
 			nodeParameters.insert(std::pair<int, NodeParameters>(id, parameters));
 		}
 		else {

@@ -248,10 +248,10 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		std::vector<GRBVar> R_i;
 		for(int i = 0; i < input->getN(); i++) {
 			// Get battery details
-			double a, b, mrate, c;
-			input->getTXParams_i(i, &a, &b, &mrate, &c);
+			double a, b, maxR, c, minR;
+			input->getTXParams_i(i, &a, &b, &maxR, &c, &minR);
 			// Sequence number for waypoint i
-			GRBVar r = model.addVar(0.0, mrate, 0.0, GRB_CONTINUOUS,  "r_" + itos(i));
+			GRBVar r = model.addVar(minR, maxR, 0.0, GRB_CONTINUOUS,  "r_" + itos(i));
 			R_i.push_back(r);
 		}
 
@@ -442,8 +442,8 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		// Limit TX rate
 		for(int i = 0; i < input->getN(); i++) {
 			// Get battery details
-			double a, b, mrate, c;
-			input->getTXParams_i(i, &a, &b, &mrate, &c);
+			double a, b, maxR, c, minR;
+			input->getTXParams_i(i, &a, &b, &maxR, &c, &minR);
 			// R <= a/(d^2 + c) + b  -->  R <= a/(dd + c) + b --> (R - b)(dd + c) <= a
 //			model.addQConstr(R_i.at(i)*Dnd_i.at(i) - b*Dnd_i.at(i) <= a, "R_"+itos(i)+"_leq_math");
 			model.addQConstr((R_i.at(i) - b)*(Dnd_i.at(i) + c) <= a, "R_"+itos(i)+"_leq_math");

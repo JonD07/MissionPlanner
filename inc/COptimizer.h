@@ -61,9 +61,6 @@ protected:
 	// // Helper function for directly solving the nonconvex problem
 	void GenerateInverseSquareConstraint(GRBModel &model, std::vector<Point>* sub_tour, Input* input, std::vector<GRBVar>* R_j, std::vector<GRBVar>* Dn_j, std::vector<GRBVar>* D2n_j);
 
-	// Lookup distance
-	double lookup_distance(int node_type, double q_size, double velocity);
-
 	Constraint_tx_type constraint_type;
 private:
 };
