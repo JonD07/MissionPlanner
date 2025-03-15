@@ -4,10 +4,11 @@ import random
 import io
 
 # Path to the C++ executable
-exec_path = "/home/jonathan/Research/HolisticFramework/Orchestrator/MissionPlanner/build/mission-planner"
-exp1_path = "/home/jonathan/Research/HolisticFramework/Orchestrator/MissionPlanner/test/Experiment1/"
-exp2_path = "/home/jonathan/Research/HolisticFramework/Orchestrator/MissionPlanner/test/Experiment2/"
-exp3_path = "/home/jonathan/Research/HolisticFramework/Orchestrator/MissionPlanner/test/Experiment4/"
+ORCHESTRATOR = "/home/jonathan/Research/HolisticFramework/Orchestrator/"
+exec_path = ORCHESTRATOR+"MissionPlanner/build/mission-planner"
+exp1_path = ORCHESTRATOR+"MissionPlanner/test/Experiment1/"
+exp2_path = ORCHESTRATOR+"MissionPlanner/test/Experiment2/"
+exp3_path = ORCHESTRATOR+"MissionPlanner/test/Experiment3/"
 
 NUM_PLOTS = 50
 
@@ -109,9 +110,8 @@ if __name__ == '__main__':
 			run_executable(5, exp1_path, i)
 
 	# Run experiment 3 (increasing data)
-	q = 0.001
 	step_count = 0
-	while q <= 524.289:
+	while step_count <= 16:
 		for i in range(NUM_PLOTS):
 			prepare_standard_scenario(exp3_path + f"plot_{step_count}_{i}.txt")
 			# Run greedy
@@ -126,6 +126,13 @@ if __name__ == '__main__':
 			# Run VRP only
 			print(f"Experiment 3: Running VRP only on plot_{step_count}_{i}.txt")
 			run_executable(5, exp3_path, step_count)
-		q *= 2
 		step_count += 1
+
+	# Experiment 1 (increasing nodes) again with optimal solver..
+	for n in range(5,201, 5):
+		for i in range(NUM_PLOTS):
+			prepare_standard_scenario(exp1_path+f"plot_{n}_{i}.txt")
+			# Optimal solver
+			print(f"Experiment 1: Running Optimal Solver on plot_{n}_{i}.txt")
+			run_executable(0, exp1_path, i)
 
