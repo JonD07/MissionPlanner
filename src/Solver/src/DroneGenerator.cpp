@@ -112,7 +112,7 @@ DroneGenerator::DroneGenerator(std::string data_path) {
 	}
 	else {
 		if(SANITY_PRINT)
-			printf("Successfully read drone data\n");
+			printf(" Successfully read drone data\n");
 	}
 }
 

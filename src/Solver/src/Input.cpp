@@ -46,7 +46,7 @@ Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_pa
 	}
 	else {
 		if(DEBUG_INPUT)
-			printf("Extracted node line\n");
+			printf(" Extracted node line\n");
 	}
 
 	// Get drone data file
@@ -56,7 +56,7 @@ Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_pa
 	}
 	else {
 		if(DEBUG_INPUT)
-			printf("Extracted drone line\n");
+			printf(" Extracted drone line\n");
 	}
 
 	// Get problem input file
@@ -80,7 +80,7 @@ Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_pa
 			scenario_data.push_back(next_line);
 		}
 
-		if(DEBUG_INPUT)
+		if(SANITY_PRINT)
 			printf("Reading in node setup\n");
 		/*
 		  Read node input data
@@ -126,7 +126,7 @@ Input::Input(std::string scenario_input_path) : input_fileName(scenario_input_pa
 
 		// Sanity print
 		if(SANITY_PRINT)
-			printf(" N = %d, M = %d\n Reading in node data\n", N, M);
+			printf(" N = %d\n Reading in node locations\n", N);
 
 		for(int i = 0; i < N && read_success; i++) {
 			// Grab next capability line

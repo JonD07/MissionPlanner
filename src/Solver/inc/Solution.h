@@ -62,9 +62,13 @@ public:
 	// Prints plan file
 	void PrintPlan(bool add_launch = true, bool add_land = true, std::string outputPath = "plan/");
 	/*
-	 * Determines the probability reward gained for the stored solution
+	 * Calculate the objective function value for this solution
 	 */
 	double Benchmark();
+	/*
+	 * Calculate the max latency
+	 */
+	double MaxLatency();
 	/*
 	 * Fills sub_tours with the time to complete each sub-tour and gives a string for each sub-tour,
 	 * in the form l:k, where l is the drone and k is the sub-tour number for that drone.

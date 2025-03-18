@@ -33,11 +33,11 @@ Offline_Input::Offline_Input(std::string scenario_input_path) : Input(scenario_i
 
 	// Did we at least get all of the above?
 	if(read_success) {
+		if(SANITY_PRINT)
+			printf("Mission-Planner setup\n Reading in drone setup\n");
+
 		// Drone generator
 		DroneGenerator droneGenerator(drone_line);
-
-		if(DEBUG_OFFLINEINPUT)
-			printf("Reading in drones:\n");
 
 		// We expect an even number of strings for drone data
 		if(scenario_data.size()%2 == 0) {
@@ -58,7 +58,7 @@ Offline_Input::Offline_Input(std::string scenario_input_path) : Input(scenario_i
 				vDroneLst.push_back(drone);
 
 				if(DEBUG_OFFLINEINPUT)
-					printf(" %d: %d, v = %f, prct-bat = %f\n", M, type, usable_speed, bat_share);
+					printf("  %d: %d, v = %f, prct-bat = %f\n", M, type, usable_speed, bat_share);
 
 				M++;
 			}
@@ -73,7 +73,7 @@ Offline_Input::Offline_Input(std::string scenario_input_path) : Input(scenario_i
 	}
 	else {
 		if(SANITY_PRINT)
-			printf("Successfully read input\n");
+			printf(" M = %d\nSuccessfully read Mission-Planner setup\n", M);
 	}
 }
 

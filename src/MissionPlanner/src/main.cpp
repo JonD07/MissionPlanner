@@ -16,8 +16,6 @@
 #include "DummyHeuristic.h"
 
 
-
-
 #define DEBUG_MAIN	DEBUG || 0
 
 #define REC_COMP_Z		0
@@ -148,9 +146,10 @@ int main(int argc, char *argv[]) {
 
 	// Results
 	double result = solution.Benchmark();
+	double max_lat = solution.MaxLatency();
 
 	if(SANITY_PRINT) {
-		printf("\nFound solution: %f\n", result);
+		printf("\nFound solution: %f -- Max Latency: %f\n", result, max_lat);
 		printf("Computation time = %f s\n", duration_s);
 		solution.PrintSolution();
 	}
@@ -166,7 +165,7 @@ int main(int argc, char *argv[]) {
 		pOutputFile = fopen(buff, "a");
 		// File format: n m runnum Objective comp-time data_size
 		fprintf(pOutputFile, "%d %d %d ", input.getN(), input.getM(), run_number);
-		fprintf(pOutputFile, "%.10f %f ", result, duration_s);
+		fprintf(pOutputFile, "%.10f %.10f %f ", result, max_lat, duration_s);
 		fprintf(pOutputFile, "%f ", input.getQ_i(0));
 		// Print if this is a valid solution
 		fprintf(pOutputFile, "%d ", solution.ValidSolution(true));

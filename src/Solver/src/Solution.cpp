@@ -94,25 +94,20 @@ void Solution::PrintPlan(bool add_launch, bool add_land, std::string outputPath)
  */
 double Solution::Benchmark() {
 	if(ValidSolution()) {
-		double total_time = 0;
-		std::vector<int> drones_used;
-		for(int l = 0; l < m_input->getM(); l++) {
-			drones_used.push_back(0);
-		}
+		double total_latency = 0;
 
 		// Cycle through drones
 		for(int l = 0; l < m_input->getM(); l++) {
+			double running_drone_time = 0.0;
 			// Cycle through sub-tours for drone l
 			for(int k = 0; k < m_input->getN(); k++) {
+				double subtour_time = 0.0;
 				// Does sub-tour k contain stops?
 				if(tours_lkj.at(l).at(k).size() > 0) {
-					// Mark that this drone runs a tour
-					drones_used.at(l) = 1;
-
 					// Is this a relaunch?
 					if(k > 0) {
 						// Yes, add in battery swap time
-						total_time += m_input->getTb_l(l);
+						subtour_time += m_input->getTb_l(l);
 					}
 					// Track the time it takes to run this tour
 					double x_prev = m_input->getX_b(), y_prev = m_input->getY_b(), z_prev = m_input->getZ_b();
@@ -122,11 +117,11 @@ double Solution::Benchmark() {
 						// Determine the distance from point to point
 						double dist_prv_nxt = distAtoB(x_prev, y_prev, z_prev, hl.fX, hl.fY, hl.fZ);
 						// Time to travel this distance
-						total_time += dist_prv_nxt/m_input->getV_l(l);
+						subtour_time += dist_prv_nxt/m_input->getV_l(l);
 
 						// Determine node service time..
 						Node* node_i = m_input->getNode_i(hl.nodeServiced);
-						total_time += node_i->collectionTime(hl.fX, hl.fY, hl.fZ);
+						subtour_time += node_i->collectionTime(hl.fX, hl.fY, hl.fZ);
 
 						// Update position
 						x_prev = hl.fX;
@@ -137,18 +132,77 @@ double Solution::Benchmark() {
 					// Distance back to the base station
 					double dist_prv_nxt = distAtoB(x_prev, y_prev, z_prev, m_input->getX_b(), m_input->getY_b(), m_input->getZ_b());
 					// Time to travel back to bs
-					total_time += dist_prv_nxt/m_input->getV_l(l);
+					subtour_time += dist_prv_nxt/m_input->getV_l(l);
+					running_drone_time += subtour_time;
+
+					// Add these latencies into total time tracker
+					total_latency += running_drone_time*tours_lkj.at(l).at(k).size();
 				}
 			}
 		}
+		return total_latency/m_input->getN();
+	}
+	else {
+		return std::numeric_limits<double>::max();
+	}
+}
 
-		// How many drones were actually deployed?
-		int drones_deployed = 0;
+/*
+ * Calculate the max latency
+ */
+double Solution::MaxLatency() {
+	if(ValidSolution()) {
+		double worst_latecy = 0;
+
+		// Cycle through drones
 		for(int l = 0; l < m_input->getM(); l++) {
-			drones_deployed += drones_used.at(l);
+			double running_drone_time = 0.0;
+			// Cycle through sub-tours for drone l
+			for(int k = 0; k < m_input->getN(); k++) {
+				double subtour_time = 0.0;
+				// Does sub-tour k contain stops?
+				if(tours_lkj.at(l).at(k).size() > 0) {
+					// Is this a relaunch?
+					if(k > 0) {
+						// Yes, add in battery swap time
+						subtour_time += m_input->getTb_l(l);
+					}
+					// Track the time it takes to run this tour
+					double x_prev = m_input->getX_b(), y_prev = m_input->getY_b(), z_prev = m_input->getZ_b();
+
+					// For each stop on this tour
+					for(HoveringLocation hl : tours_lkj.at(l).at(k)) {
+						// Determine the distance from point to point
+						double dist_prv_nxt = distAtoB(x_prev, y_prev, z_prev, hl.fX, hl.fY, hl.fZ);
+						// Time to travel this distance
+						subtour_time += dist_prv_nxt/m_input->getV_l(l);
+
+						// Determine node service time..
+						Node* node_i = m_input->getNode_i(hl.nodeServiced);
+						subtour_time += node_i->collectionTime(hl.fX, hl.fY, hl.fZ);
+
+						// Update position
+						x_prev = hl.fX;
+						y_prev = hl.fY;
+						z_prev = hl.fZ;
+					}
+
+					// Distance back to the base station
+					double dist_prv_nxt = distAtoB(x_prev, y_prev, z_prev, m_input->getX_b(), m_input->getY_b(), m_input->getZ_b());
+					// Time to travel back to bs
+					subtour_time += dist_prv_nxt/m_input->getV_l(l);
+					running_drone_time += subtour_time;
+				}
+			}
+
+			// Did we find a worst latency?
+			if(running_drone_time > worst_latecy) {
+				// Found something worse.. update!
+				worst_latecy = running_drone_time;
+			}
 		}
 
-		return total_time/drones_deployed;
+		return worst_latecy;
 	}
 	else {
 		return std::numeric_limits<double>::max();
