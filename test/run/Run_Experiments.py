@@ -9,6 +9,7 @@ exec_path = ORCHESTRATOR+"MissionPlanner/build/mission-planner"
 exp1_path = ORCHESTRATOR+"MissionPlanner/test/Experiment1/"
 exp2_path = ORCHESTRATOR+"MissionPlanner/test/Experiment2/"
 exp3_path = ORCHESTRATOR+"MissionPlanner/test/Experiment3/"
+exp4_path = ORCHESTRATOR+"MissionPlanner/test/Experiment4/"
 
 NUM_PLOTS = 50
 
@@ -61,9 +62,6 @@ if __name__ == '__main__':
 	for n in range(5,201, 5):
 		for i in range(NUM_PLOTS):
 			prepare_standard_scenario(exp1_path+f"plot_{n}_{i}.txt")
-			# Run greedy
-			print(f"Experiment 1: Running Greedy on plot_{n}_{i}.txt")
-			run_executable(1, exp1_path, i)
 			# Run our algorithm
 			print(f"Experiment 1: Running VRP-CO on plot_{n}_{i}.txt")
 			run_executable(3, exp1_path, i)
@@ -78,9 +76,6 @@ if __name__ == '__main__':
 	for n in range(5, 151, 5):
 		for i in range(NUM_PLOTS):
 			prepare_standard_scenario(exp2_path + f"plot_{n}_{i}.txt")
-			# Run greedy
-			print(f"Experiment 2: Running Greedy on plot_{n}_{i}.txt")
-			run_executable(1, exp2_path, n)
 			# Run our algorithm
 			print(f"Experiment 2: Running VRP-CO on plot_{n}_{i}.txt")
 			run_executable(3, exp2_path, n)
@@ -96,9 +91,6 @@ if __name__ == '__main__':
 	for m in range(1, 11):
 		for i in range(NUM_PLOTS):
 			prepare_inc_drone_scenario(exp1_path + f"plot_{n}_{i}.txt", m)
-			# Run greedy
-			print(f"Experiment 1.5: Running Greedy on plot_{n}_{i}.txt")
-			run_executable(1, exp1_path, i)
 			# Run our algorithm
 			print(f"Experiment 1.5: Running VRP-CO on plot_{n}_{i}.txt")
 			run_executable(3, exp1_path, i)
@@ -114,9 +106,6 @@ if __name__ == '__main__':
 	while step_count <= 16:
 		for i in range(NUM_PLOTS):
 			prepare_standard_scenario(exp3_path + f"plot_{step_count}_{i}.txt")
-			# Run greedy
-			print(f"Experiment 3: Running Greedy on plot_{step_count}_{i}.txt")
-			run_executable(1, exp3_path, step_count)
 			# Run our algorithm
 			print(f"Experiment 3: Running VRP-CO on plot_{step_count}_{i}.txt")
 			run_executable(3, exp3_path, step_count)
@@ -128,11 +117,25 @@ if __name__ == '__main__':
 			run_executable(5, exp3_path, step_count)
 		step_count += 1
 
-	# Experiment 1 (increasing nodes) again with optimal solver..
-	for n in range(5,201, 5):
+	# Experiment 4 (small increasing nodes)
+	for n in range(5, 31, 1):
 		for i in range(NUM_PLOTS):
-			prepare_standard_scenario(exp1_path+f"plot_{n}_{i}.txt")
+			prepare_standard_scenario(exp4_path+f"plot_{n}_{i}.txt")
+			# Run our algorithm
+			print(f"Experiment 4: Running VRP-CO on plot_{step_count}_{i}.txt")
+			run_executable(3, exp4_path, step_count)
+			# Run baseline
+			print(f"Experiment 4: Running baseline on plot_{step_count}_{i}.txt")
+			run_executable(4, exp4_path, step_count)
+			# Run VRP only
+			print(f"Experiment 4: Running VRP only on plot_{step_count}_{i}.txt")
+			run_executable(5, exp4_path, step_count)
+
+	# Experiment 4 (small increasing nodes) with optimal solver..
+	for n in range(5, 31, 1):
+		for i in range(NUM_PLOTS):
+			prepare_standard_scenario(exp4_path+f"plot_{n}_{i}.txt")
 			# Optimal solver
-			print(f"Experiment 1: Running Optimal Solver on plot_{n}_{i}.txt")
-			run_executable(0, exp1_path, i)
+			print(f"Experiment 4: Running Optimal Solver on plot_{n}_{i}.txt")
+			run_executable(0, exp4_path, i)
 

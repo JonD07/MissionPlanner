@@ -2,9 +2,10 @@ import random
 import math
 from MAVProxy.modules.mavproxy_map import srtm
 
-INC_NODES = True
-INC_ALPHA = True
-INC_DATA = True
+INC_NODES = False
+INC_ALPHA = False
+INC_DATA = False
+SMALL_SET = True
 FW_TEST = False
 DATA_SIZE_VS_DISTANCE_TEST = False	# Vary data size for one node
 DUMMY = False
@@ -177,6 +178,38 @@ if INC_DATA:
 				file.write(f"{x_b} {y_b} {y_b}\n")
 		step_count += 1
 
+# What increases?
+if SMALL_SET:
+	FILE_PATH = "Experiment4/"
+	end_size = 30
+	inc_size = 1
+	# Loop over the number of sensors to use (n)
+	for n in range(START_COUNT, (end_size + inc_size), inc_size):
+		# Generate NUM_PLOTS plots
+		for i in range(NUM_PLOTS):
+			# Find the max distance a sensor can from the origin
+			MAX_COORD = math.sqrt(n/ALPHA)
+			# Open the file
+			file_name = f"{FILE_PATH}plot_{n}_{i}.txt"
+			with open(file_name, 'w') as file:
+				# Number of nodes
+				file.write(f"{n}\n")
+				for l in range(n):
+					# For each node: x y z z_s Q(Mb) type ip-adrs
+					# Pick random coordinates
+					x = MAX_COORD * random.random() - MAX_COORD/2
+					y = MAX_COORD * random.random() - MAX_COORD/2
+					z = get_relative_z(x, y)
+					z_s = random.choice(list(range(8, 20, 2)))
+					q = get_rnd_q()
+					# Write the results to file
+					file.write(f"{x} {y} {z} {z_s} {q} "+get_rnd_node()+"\n")
+				# Pick base station
+				x_b = (MAX_COORD * 2/3) * random.random() + (MAX_COORD * 1/6)
+				y_b = (MAX_COORD * 2/3) * random.random() + (MAX_COORD * 1/6)
+				z = get_relative_z(x, y)
+				# Record BS position
+				file.write(f"0 0 0\n")
 
 if FW_TEST:
 	FILE_PATH = "FW_Test/"
