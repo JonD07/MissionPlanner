@@ -167,8 +167,17 @@ int main(int argc, char *argv[]) {
 		fprintf(pOutputFile, "%d %d %d ", input.getN(), input.getM(), run_number);
 		fprintf(pOutputFile, "%.10f %.10f %f ", result, max_lat, duration_s);
 		fprintf(pOutputFile, "%f ", input.getQ_i(0));
-		// Print if this is a valid solution
-		fprintf(pOutputFile, "%d ", solution.ValidSolution(true));
+
+		// Did we hit the time-out?
+		if(duration_s > 43200.0) {
+			fprintf(stderr, "[Warning] Hit timeout");
+			// Print if this is a valid solution
+			fprintf(pOutputFile, "%d ", (solution.ValidSolution(true) - 2));
+		}
+		else {
+			// Print if this is a valid solution
+			fprintf(pOutputFile, "%d ", solution.ValidSolution(true));
+		}
 
 		if(PRINT_SUBTOURS) {
 			// Grab sub-tour times

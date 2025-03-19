@@ -17,7 +17,8 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		env.start();
 		GRBModel model = GRBModel(env);
 		model.set(GRB_IntParam_NonConvex, 2);
-		model.set(GRB_DoubleParam_TimeLimit, 20.0);
+		// Time-out after 12 hours...
+		model.set(GRB_DoubleParam_TimeLimit, 43200.0);
 
 		if(DEBUG_SLVR_OPT) {
 			printf("Starting up Gurobi\n");
