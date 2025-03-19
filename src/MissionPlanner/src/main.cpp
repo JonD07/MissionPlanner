@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
 	double max_lat = solution.MaxLatency();
 
 	if(SANITY_PRINT) {
-		printf("\nFound solution: %f -- Max Latency: %f\n", result, max_lat);
+		printf("\nFound solution: %f\nMax Latency: %f\n", result, max_lat);
 		printf("Computation time = %f s\n", duration_s);
 		solution.PrintSolution();
 	}

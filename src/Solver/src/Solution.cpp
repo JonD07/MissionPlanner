@@ -30,13 +30,12 @@ Solution::~Solution() {}
 void Solution::PrintSolution() {
 	for(int l = 0; l < m_input->getM(); l++) {
 		for(int k = 0; k < m_input->getN(); k++) {
-			int prev = -1;
-			for(HoveringLocation hl : tours_lkj.at(l).at(k)) {
-				printf(" %d:%d %d->%d (%f, %f, %f)\n", l, k, prev, hl.nodeServiced, hl.fX, hl.fY, hl.fZ);
-				prev = hl.nodeServiced;
-			}
-			if(prev >= 0) {
-				printf(" %d:%d %d->BS\n", l, k, prev);
+			if(tours_lkj.at(l).at(k).size() > 0) {
+				printf(" %d:%d \x1B[1;42;38mBS\033[0m->", l, k);
+				for(HoveringLocation hl : tours_lkj.at(l).at(k)) {
+					printf("\x1B[1;42;38m%d\033[0m:(%.1f, %.1f, %.1f)->", hl.nodeServiced, hl.fX, hl.fY, hl.fZ);
+				}
+				printf("\x1B[1;42;38mBS\033[0m\n");
 			}
 		}
 	}

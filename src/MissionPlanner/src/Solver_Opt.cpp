@@ -644,6 +644,7 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 											printf("->%d", j);
 										// New next node
 										current_node_i = j;
+										break;
 									}
 								}
 							}
@@ -651,6 +652,10 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 					}
 				}
 			}
+		}
+		if(DEBUG_SLVR_OPT) {
+			printf("Compiled solution:\n");
+			I_crnt->PrintSolution();
 		}
 
 	} catch(GRBException e) {
