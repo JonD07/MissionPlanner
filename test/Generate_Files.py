@@ -183,8 +183,9 @@ if SMALL_SET:
 	FILE_PATH = "Experiment4/"
 	end_size = 30
 	inc_size = 1
+	start_count = 4
 	# Loop over the number of sensors to use (n)
-	for n in range(START_COUNT, (end_size + inc_size), inc_size):
+	for n in range(start_count, (end_size + inc_size), inc_size):
 		# Generate NUM_PLOTS plots
 		for i in range(NUM_PLOTS):
 			# Find the max distance a sensor can from the origin
