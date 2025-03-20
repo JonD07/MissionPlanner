@@ -4,7 +4,7 @@ import random
 import io
 
 # Path to the C++ executable
-ORCHESTRATOR = "/home/jonathan/Research/HolisticFramework/Orchestrator/"
+ORCHESTRATOR = "/home/jonathan/Research/HolisticFramework/"
 exec_path = ORCHESTRATOR+"MissionPlanner/build/mission-planner"
 exp1_path = ORCHESTRATOR+"MissionPlanner/test/Experiment1/"
 exp2_path = ORCHESTRATOR+"MissionPlanner/test/Experiment2/"
@@ -24,6 +24,21 @@ def prepare_standard_scenario(input_file_location):
 	content += input_file_location+"\n"
 	# Add in drones
 	content += "0\n15.0 1.0\n1\n12.0 1.0\n2\n10.0 1.0"
+
+	# Write to scenario_run.txt
+	with open('scenario_run.txt', 'w') as scenario_run_file:
+		scenario_run_file.write(content)
+
+# Function to read scenario.txt and write to scenario_run.txt
+def prepare_twodrones_scenario(input_file_location):
+	# Read from scenario.txt
+	with open('scenario.txt', 'r') as scenario_file:
+		content = scenario_file.read()
+
+	# Add the location of the input
+	content += input_file_location+"\n"
+	# Add in drones
+	content += "1\n12.0 1.0\n2\n10.0 1.0"
 
 	# Write to scenario_run.txt
 	with open('scenario_run.txt', 'w') as scenario_run_file:
@@ -120,7 +135,7 @@ if __name__ == '__main__':
 	# Experiment 4 (small increasing nodes)
 	for n in range(5, 31, 1):
 		for i in range(NUM_PLOTS):
-			prepare_standard_scenario(exp4_path+f"plot_{n}_{i}.txt")
+			prepare_twodrones_scenario(exp4_path+f"plot_{n}_{i}.txt")
 			# Run our algorithm
 			print(f"Experiment 4: Running VRP-CO on plot_{step_count}_{i}.txt")
 			run_executable(3, exp4_path, step_count)
@@ -134,7 +149,7 @@ if __name__ == '__main__':
 	# Experiment 4 (small increasing nodes) with optimal solver..
 	for n in range(5, 31, 1):
 		for i in range(NUM_PLOTS):
-			prepare_standard_scenario(exp4_path+f"plot_{n}_{i}.txt")
+			prepare_twodrones_scenario(exp4_path+f"plot_{n}_{i}.txt")
 			# Optimal solver
 			print(f"Experiment 4: Running Optimal Solver on plot_{n}_{i}.txt")
 			run_executable(0, exp4_path, i)
