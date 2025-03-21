@@ -200,31 +200,32 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 				model.addQConstr(Ts_j.at(j)*R_j.at(j) >= input->getQ_i(i), "R_"+itos(j)+"_geq_Q/Ts");
 			}
 
-			// Constrain energy consumption (based on time)
-			{
-				GRBLinExpr lhs = 0;
-
-				// Add in energy to travel from s->f
-				lhs += Dsf*(1.0/onlineInput->getV())*onlineInput->getRho_m();
-
-				// Add in energy to travel from i->j (NOTE: i->0 is bs->0)
-				for(int j = 0; j < n_k; j++) {
-					lhs += Di_j.at(j)*(1.0/onlineInput->getV())*onlineInput->getRho_m();
-				}
-
-				// Add in energy to travel from j->bs
-				lhs += Dnb*(1.0/onlineInput->getV())*onlineInput->getRho_m();
-
-				// Add in time to service first node
-				lhs += Ts_f*onlineInput->getRho_h();
-
-				// Add in time to service node j
-				for(int j = 0; j < n_k; j++) {
-					lhs += Ts_j.at(j)*onlineInput->getRho_h();
-				}
-
-				model.addConstr(lhs <= onlineInput->getB(), "pT_l_leq_b");
-			}
+//			// TODO: Do we check this..?
+//			// Constrain energy consumption (based on time)
+//			{
+//				GRBLinExpr lhs = 0;
+//
+//				// Add in energy to travel from s->f
+//				lhs += Dsf*(1.0/onlineInput->getV())*onlineInput->getRho_m();
+//
+//				// Add in energy to travel from i->j (NOTE: i->0 is bs->0)
+//				for(int j = 0; j < n_k; j++) {
+//					lhs += Di_j.at(j)*(1.0/onlineInput->getV())*onlineInput->getRho_m();
+//				}
+//
+//				// Add in energy to travel from j->bs
+//				lhs += Dnb*(1.0/onlineInput->getV())*onlineInput->getRho_m();
+//
+//				// Add in time to service first node
+//				lhs += Ts_f*onlineInput->getRho_h();
+//
+//				// Add in time to service node j
+//				for(int j = 0; j < n_k; j++) {
+//					lhs += Ts_j.at(j)*onlineInput->getRho_h();
+//				}
+//
+//				model.addConstr(lhs <= onlineInput->getB(), "pT_l_leq_b");
+//			}
 
 			// Limit TX rate for first node (set to rate when directly above node)
 			{
@@ -332,8 +333,8 @@ void Solver_Standard::Solve(Input* input, Solution* I_crnt) {
 			}
 
 		} catch(GRBException e) {
-			std::cout << "Error code = " << e.getErrorCode() << std::endl;
-			std::cout << e.getMessage() << std::endl;
+			fprintf(stderr, "[ERROR][Solver_Standard::Solve] Error code = %d - msg: %s\n", e.getErrorCode(), e.getMessage().c_str());
+			exit(1);
 		}  catch(const std::exception& e) {
 			printf("Exception during optimization: %s\n", e.what());
 		}
