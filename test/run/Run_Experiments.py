@@ -133,21 +133,21 @@ if __name__ == '__main__':
 		step_count += 1
 
 	# Experiment 4 (small increasing nodes)
-	for n in range(5, 31, 1):
+	for n in range(4, 31, 1):
 		for i in range(NUM_PLOTS):
 			prepare_twodrones_scenario(exp4_path+f"plot_{n}_{i}.txt")
 			# Run our algorithm
-			print(f"Experiment 4: Running VRP-CO on plot_{step_count}_{i}.txt")
-			run_executable(3, exp4_path, step_count)
+			print(f"Experiment 4: Running VRP-CO on plot_{n}_{i}.txt")
+			run_executable(3, exp4_path, i)
 			# Run baseline
-			print(f"Experiment 4: Running baseline on plot_{step_count}_{i}.txt")
-			run_executable(4, exp4_path, step_count)
+			print(f"Experiment 4: Running baseline on plot_{n}_{i}.txt")
+			run_executable(4, exp4_path, i)
 			# Run VRP only
-			print(f"Experiment 4: Running VRP only on plot_{step_count}_{i}.txt")
-			run_executable(5, exp4_path, step_count)
+			print(f"Experiment 4: Running VRP only on plot_{n}_{i}.txt")
+			run_executable(5, exp4_path, i)
 
 	# Experiment 4 (small increasing nodes) with optimal solver..
-	for n in range(5, 31, 1):
+	for n in range(4, 31, 1):
 		for i in range(NUM_PLOTS):
 			prepare_twodrones_scenario(exp4_path+f"plot_{n}_{i}.txt")
 			# Optimal solver
