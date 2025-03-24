@@ -18,7 +18,7 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 		GRBModel model = GRBModel(env);
 		model.set(GRB_IntParam_NonConvex, 2);
 		// Time-out after 12 hours...
-		model.set(GRB_DoubleParam_TimeLimit, 43200.0);
+		model.set(GRB_DoubleParam_TimeLimit, MIQCP_TIMEOUT);
 
 		if(DEBUG_SLVR_OPT) {
 			printf("Starting up Gurobi\n");
@@ -272,6 +272,11 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 			for(int k = 0; k < input->getN(); k++) {
 				GRBQuadExpr rhs = 0;
 
+				// The first sub-tour is free... the rest need a battery swap
+				if(k > 0) {
+					rhs += input->getTb_l(l)*W_lk.at(l).at(k);
+				}
+
 				// Add in time to travel from i->j (if traveling from i->j)
 				for(int i = 0; i < input->getN(); i++) {
 					for(int j = 0; j < input->getN(); j++) {
@@ -294,11 +299,8 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 					for(int j = 0; j < input->getN(); j++) {
 						rhs += Ts_i.at(i)*E_lijk.at(l).at(j).at(i).at(k);
 					}
-				}
-
-				// The first sub-tour is free... the rest need a battery swap
-				if(k > 0) {
-					rhs += input->getTb_l(l)*W_lk.at(l).at(k);
+					rhs += Ts_i.at(i)*Eb_lik.at(l).at(i).at(k);
+					rhs += Ts_i.at(i)*E_lik_b.at(l).at(i).at(k);
 				}
 
 				model.addQConstr(T_lk.at(l).at(k) >= rhs, "T_"+itos(l)+itos(k)+"_geq_tour_time");
@@ -370,6 +372,8 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 					for(int j = 0; j < input->getN(); j++) {
 						lhs += Ts_i.at(i)*E_lijk.at(l).at(j).at(i).at(k)*input->getRho_h(l);
 					}
+					lhs += Ts_i.at(i)*Eb_lik.at(l).at(i).at(k);
+					lhs += Ts_i.at(i)*E_lik_b.at(l).at(i).at(k);
 				}
 
 				model.addQConstr(lhs <= input->getB_l(l), "pT_"+itos(l)+itos(k)+"_leq_b");
@@ -572,9 +576,9 @@ void Solver_Opt::Solve(Input* input, Solution* I_crnt) {
 			printf("Obj: %f\n", model.get(GRB_DoubleAttr_ObjVal));
 
 			// Each hovering location
-			printf("Hovering Order and Locations:\n");
+			printf("Hovering Order, Locations, Service Times:\n");
 			for(int i = 0; i < input->getN(); i++) {
-				printf(" %d : %f (%f, %f, %f)\n", i, U_i.at(i).get(GRB_DoubleAttr_X), X_i.at(i).get(GRB_DoubleAttr_X), Y_i.at(i).get(GRB_DoubleAttr_X), Z_i.at(i).get(GRB_DoubleAttr_X));
+				printf(" %d : %f (%f, %f, %f) %.3f s\n", i, U_i.at(i).get(GRB_DoubleAttr_X), X_i.at(i).get(GRB_DoubleAttr_X), Y_i.at(i).get(GRB_DoubleAttr_X), Z_i.at(i).get(GRB_DoubleAttr_X), Ts_i.at(i).get(GRB_DoubleAttr_X));
 			}
 
 			// Tour variables...

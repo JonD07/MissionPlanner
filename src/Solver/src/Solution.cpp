@@ -92,6 +92,9 @@ void Solution::PrintPlan(bool add_launch, bool add_land, std::string outputPath)
  * Calculates the objective function values for the stored solution. Will return INF if this is not a valid solution.
  */
 double Solution::Benchmark() {
+	if(DEBUG_SOL) {
+		printf("Benchmarking solution\n");
+	}
 	if(ValidSolution()) {
 		double total_latency = 0;
 
@@ -103,13 +106,23 @@ double Solution::Benchmark() {
 				double subtour_time = 0.0;
 				// Does sub-tour k contain stops?
 				if(tours_lkj.at(l).at(k).size() > 0) {
+					if(DEBUG_SOL) {
+						printf(" %d:%d (visits %ld sensors)", l, k, tours_lkj.at(l).at(k).size());
+					}
 					// Is this a relaunch?
 					if(k > 0) {
 						// Yes, add in battery swap time
 						subtour_time += m_input->getTb_l(l);
+						if(DEBUG_SOL) {
+							printf("(battery swap + %f)",  m_input->getTb_l(l));
+						}
 					}
 					// Track the time it takes to run this tour
 					double x_prev = m_input->getX_b(), y_prev = m_input->getY_b(), z_prev = m_input->getZ_b();
+
+					if(DEBUG_SOL) {
+						printf(" \x1B[1;42;38mBS\033[0m");
+					}
 
 					// For each stop on this tour
 					for(HoveringLocation hl : tours_lkj.at(l).at(k)) {
@@ -120,12 +133,17 @@ double Solution::Benchmark() {
 
 						// Determine node service time..
 						Node* node_i = m_input->getNode_i(hl.nodeServiced);
-						subtour_time += node_i->collectionTime(hl.fX, hl.fY, hl.fZ);
+						double tx_time = node_i->collectionTime(hl.fX, hl.fY, hl.fZ);
+						subtour_time += tx_time;
 
 						// Update position
 						x_prev = hl.fX;
 						y_prev = hl.fY;
 						z_prev = hl.fZ;
+
+						if(DEBUG_SOL) {
+							printf(" - %.1fm->\x1B[1;42;38m%d\033[0m:(%.2f, %.2f, %.2f - %.2fs)", dist_prv_nxt, hl.nodeServiced, x_prev, y_prev, z_prev, tx_time);
+						}
 					}
 
 					// Distance back to the base station
@@ -134,15 +152,28 @@ double Solution::Benchmark() {
 					subtour_time += dist_prv_nxt/m_input->getV_l(l);
 					running_drone_time += subtour_time;
 
+					if(DEBUG_SOL) {
+						printf(" - %.1fm->\x1B[1;42;38mBS\033[0m", dist_prv_nxt);
+						printf("\n  Sub-tour time = %.2f\n", subtour_time);
+					}
+
 					// Add these latencies into total time tracker
 					total_latency += running_drone_time*tours_lkj.at(l).at(k).size();
 				}
 			}
 		}
+
+		if(DEBUG_SOL) {
+			printf(" Final solution = %f\n", total_latency/m_input->getN());
+		}
+
 		return total_latency/m_input->getN();
 	}
 	else {
 		return std::numeric_limits<double>::max();
+		if(DEBUG_SOL) {
+			printf(" Solution is invalid!\n");
+		}
 	}
 }
 

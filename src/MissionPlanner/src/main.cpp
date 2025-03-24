@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
 		fprintf(pOutputFile, "%f ", input.getQ_i(0));
 
 		// Did we hit the time-out?
-		if(duration_s > 43200.0) {
+		if(duration_s >= MIQCP_TIMEOUT) {
 			fprintf(stderr, "[Warning] Hit timeout");
 			// Print if this is a valid solution
 			fprintf(pOutputFile, "%d ", (solution.ValidSolution(true) - 2));
